@@ -2,6 +2,8 @@
 
 Personal Claude Code plugin: agents, principle and stack skills, guardrail hooks and DevSecOps templates for Django/DRF, React, Terraform, Azure/AWS and containers.
 
+**How to use it:** see [docs/USAGE.md](docs/USAGE.md) for setup, onboarding a repo, the daily commands, the feature chain, guardrails and model routing.
+
 ## Install
 
 ### Claude Code:
