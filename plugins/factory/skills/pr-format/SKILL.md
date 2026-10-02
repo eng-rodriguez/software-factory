@@ -1,0 +1,45 @@
+---
+name: pr-format
+description: The single pull request format for every repo - Conventional Commit title plus Summary, Why and Technical Notes. Use whenever drafting a PR title or body, or reviewing one.
+---
+## Title
+One line, `type(scope): imperative summary`, at most 72 characters.
+Types: feat, fix, refactor, perf, test, docs, build, ci, chore, revert. Add `!` after the scope for breaking changes.
+
+## Body — exactly three sections
+```markdown
+## Summary
+<2–4 sentences: what changes for users or the system. No file lists.>
+
+## Why
+<2–4 sentences: the problem or goal.>
+Story: <link> · Brief: <path>
+
+## Technical Notes
+- <3–7 one-line bullets: migrations, API or contract changes, infra changes, feature flags, risks and rollback, follow-ups>
+```
+
+## Rules
+- In multi-repo features, add one Technical Notes bullet with the merge order and sibling PRs, e.g. "Merge 2 of 3, after org/app-infra#123".
+- No other sections, no test output, no restating the diff. CI shows tests, scans and the Terraform plan.
+- A reviewer should understand the PR in under a minute.
+- Write the body to a temp file and pass it with `gh pr create --title "<title>" --body-file <file>`.
+
+## Example
+```markdown
+feat(orders): add bulk cancel endpoint for pending orders
+
+## Summary
+Staff can cancel up to 100 pending orders in one request from the orders table.
+The API adds POST /api/orders/bulk-cancel and the UI adds a "Cancel selected" action.
+
+## Why
+Support cancels orders one at a time during supplier outages, which takes hours.
+Story: #482 · Brief: docs/briefs/bulk-cancel.md
+
+## Technical Notes
+- New service function orders.services.bulk_cancel, one transaction per batch
+- Migration 0042 adds an index on (status, created_at); safe to run online
+- Endpoint is behind the bulk_cancel feature flag, off by default
+- Rollback: turn the flag off; the migration is backward compatible
+```
