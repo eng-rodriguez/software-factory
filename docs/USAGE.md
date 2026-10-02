@@ -141,7 +141,7 @@ Because the story and brief are files, a later session or a colleague can pick t
 - **You merge.**
 - `deliver.yml` then builds the image once, scans it, generates an SBOM, signs it, deploys to staging by digest, smoke-tests it and runs a DAST scan. It waits for **your approval** before deploying the same digest to production.
 
-**PR format.** Every PR uses a Conventional Commit title of at most 72 characters, plus three sections: **Summary**, **Why** and **Technical Notes**. `pr-format.yml` fails the PR when the format is wrong.
+**PR format.** Every PR uses a Conventional Commit title of at most 72 characters, plus three sections: **Summary**, **Why** and **Technical Notes**. `pr-format.yml` fails the PR when the format is wrong. Dependabot PRs are exempt.
 
 **Stacked work.** While PR A is in review, you can branch B from A and start the next feature: one feature per PR.
 
