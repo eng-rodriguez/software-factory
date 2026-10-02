@@ -21,7 +21,7 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          plugin_marketplaces: "https://github.com/<you>/software-factory.git"
+          plugin_marketplaces: "https://github.com/eng-rodriguez/software-factory.git"
           plugins: "factory@my-factory"
           prompt: |
             Review PR #${{ github.event.pull_request.number }} in ${{ github.repository }}.

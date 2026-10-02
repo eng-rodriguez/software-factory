@@ -7,14 +7,14 @@ Personal Claude Code plugin: agents, principle and stack skills, guardrail hooks
 ### Claude Code:
 
 ```shell
-/plugin marketplace add <github-user>/software-factory
+/plugin marketplace add eng-rodriguez/software-factory
 /plugin install factory@my-factory
 ```
 
 ### GitHub Copilot CLI:
 
 ```shell
-copilot plugin marketplace add <github-user>/software-factory
+copilot plugin marketplace add eng-rodriguez/software-factory
 copilot plugin install factory@my-factory
 ```
 
@@ -27,14 +27,14 @@ Generic: jq, yq (v4), git, gh
 Stack: uv, ruff, mypy, bandit, node, npm, terraform, tflint, checkov, actionlint, zizmor, gitleaks, trivy
 ```
 
-## Comamnds
+## Commands
 
 ```shell
 /feature-factory <feature> full chain with story, brief and final approvals
 /factory-lite <fix> researcher ➔ builder ➔ validator ➔ security review
 /explore <question> read-only exploration
 /adr <decision> record an architecture decision
-/onboard-project setup up a repo for the factory
+/onboard-project set up a repo for the factory
 ```
 
 ## Changing the factory
@@ -42,5 +42,16 @@ Stack: uv, ruff, mypy, bandit, node, npm, terraform, tflint, checkov, actionlint
 1. Edit the agent, skill or hook.
 2. Bump "version" in `plugins/factory/.claude-plugin/plugin.json`.
 3. Add a CHANGELOG.md entry.
-4. Commit, tag vX.Y.Z, push. Run `/plugin` marketplace update my-factory where it's intalled.
+4. Commit, tag vX.Y.Z, push. Run `/plugin marketplace update my-factory` where it is installed.
 
+
+## Local development
+
+Add the checkout as a marketplace so edits apply after a restart:
+
+```shell
+claude plugin marketplace add ./software-factory
+claude plugin install factory@my-factory
+```
+
+The plugin repo is private, so `claude-review.yml` in other repos needs read access to it (a fine-grained token, or make this repo public; it holds no secrets).
