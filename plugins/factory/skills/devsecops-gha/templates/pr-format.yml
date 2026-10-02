@@ -6,6 +6,9 @@ on:
 permissions: {}
 jobs:
   pr-format:
+    # Dependabot writes its own title and body, so the three-section check does not apply.
+    # A skipped job counts as passing for required status checks.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:

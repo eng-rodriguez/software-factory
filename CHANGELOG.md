@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1 - 2026-10-02
+
+* pr-format.yml template skips Dependabot PRs, whose bodies lack the Summary / Why / Technical Notes sections.
+
 ## 0.2.0 - 2026-10-02
 
 * Removed everything that needs a paid plan or API key: the `claude-review.yml` template, the CodeQL and dependency-review jobs in `ci.yml`, and artifact attestations in `deliver.yml`. Free scanners (gitleaks, pip-audit, npm audit, Checkov, Trivy, zizmor) stay.
