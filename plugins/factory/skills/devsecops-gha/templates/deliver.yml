@@ -1,4 +1,4 @@
-# deliver.yml — build once, scan, SBOM, sign, attest, deploy by digest. Pin actions with `pinact run`.
+# deliver.yml — build once, scan, SBOM, sign (cosign keyless), deploy by digest. Pin actions with `pinact run`.
 # Each GitHub Environment (staging, production) defines variables:
 #   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, AKS_RESOURCE_GROUP, AKS_CLUSTER,
 #   TF_DIR, HELM_RELEASE, HELM_NAMESPACE, HELM_VALUES, BASE_URL
@@ -22,7 +22,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    permissions: { contents: read, packages: write, id-token: write, attestations: write }
+    permissions: { contents: read, packages: write, id-token: write }
     outputs:
       digest: ${{ steps.push.outputs.digest }}
     steps:
@@ -49,10 +49,6 @@ jobs:
           image: ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
           format: spdx-json
           output-file: sbom.spdx.json
-      - uses: actions/attest-build-provenance@v2
-        with: { subject-name: "${{ env.IMAGE }}", subject-digest: "${{ steps.push.outputs.digest }}", push-to-registry: true }
-      - uses: actions/attest-sbom@v2
-        with: { subject-name: "${{ env.IMAGE }}", subject-digest: "${{ steps.push.outputs.digest }}", sbom-path: sbom.spdx.json, push-to-registry: true }
       - uses: sigstore/cosign-installer@v3
       - name: Sign image (keyless)
         env:

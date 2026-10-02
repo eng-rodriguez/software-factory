@@ -24,6 +24,10 @@ This plugin turns a Claude Code session into a fixed delivery chain: research â†
 
 The plugin is the same everywhere. Everything specific to one project lives in that project.
 
+## Free tooling only
+
+The factory needs no paid service. Everything it installs runs free on private repos: gitleaks, bandit, pip-audit, npm audit, Checkov, Trivy, tflint, zizmor, actionlint, OWASP ZAP and cosign keyless signing, plus Dependabot, GitHub Environments and OIDC. It does not use GitHub Advanced Security features (CodeQL, dependency review, secret scanning, artifact attestations on private repos) or a hosted AI review. The reviewer agents run locally in your Claude Code session before the PR is opened.
+
 ## One-time setup
 
 1. **Install the plugin.**
@@ -62,18 +66,17 @@ It detects the layout and commands, then shows you drafts of `.factory.yml` and 
 
 - `docs/domain.md` (glossary and context map), plus `docs/adr/`, `docs/briefs/` and `docs/stories/`
 - `.github/pull_request_template.md` and `.github/CODEOWNERS`
-- `ci.yml`, `claude-review.yml`, `pr-format.yml`, `dependabot.yml`, and `deliver.yml` if the repo deploys
+- `ci.yml`, `pr-format.yml`, `dependabot.yml`, and `deliver.yml` if the repo deploys
 
 It never restructures the repo or overwrites existing workflows. Everything lands as one PR for you to review.
 
 **After merging, configure GitHub.** The PR description lists these steps:
 
 - [ ] Add a ruleset on `main`: require a PR, 1 approval and CODEOWNERS review, block force pushes, and require the `ci-ok` and `pr-format` checks.
-- [ ] Turn on secret scanning, push protection, and Dependabot alerts and security updates.
-- [ ] Enable code scanning (CodeQL). Private repos need GitHub Advanced Security for this.
+- [ ] Turn on Dependabot alerts and security updates (free).
 - [ ] Set default workflow permissions to read-only, and stop Actions from approving PRs.
 - [ ] Create environments `dev`, `staging` (main only) and `production` (main only, you as required reviewer).
-- [ ] Add the `ANTHROPIC_API_KEY` secret. Add cloud identity IDs as variables; they aren't secrets.
+- [ ] Add cloud identity IDs as variables; they aren't secrets.
 - [ ] Create two OIDC identities per cloud: a read-only **plan** identity trusted from pull requests, and a **deploy** identity trusted only from the `staging` and `production` environments.
 - [ ] Enable squash merging with the PR title as the commit message.
 - [ ] Run `pinact run` once to pin every action to a full commit SHA.
@@ -126,8 +129,7 @@ Because the story and brief are files, a later session or a colleague can pick t
 
 **After the PR opens:**
 
-- `ci.yml` runs the gates: secrets, CodeQL, Python and web tests, dependency review, IaC scans, a Terraform plan posted as a PR comment, container scan, workflow lint, and a scope check that every changed file appears in the brief.
-- `claude-review.yml` posts a review comment using the same `pr-reviewer` and `security-reviewer` agents.
+- `ci.yml` runs the gates: secrets (gitleaks), Python and web tests with dependency audits, IaC scans, a Terraform plan posted as a PR comment, container scan, workflow lint, and a scope check that every changed file appears in the brief.
 - **You merge.**
 - `deliver.yml` then builds the image once, scans it, generates an SBOM, signs it, deploys to staging by digest, smoke-tests it and runs a DAST scan. It waits for **your approval** before deploying the same digest to production.
 
@@ -220,13 +222,13 @@ Run these once after setup. Each should produce the stated result.
 
 - [ ] Ask Claude to run `terraform apply`: guard-bash blocks it and gives a reason.
 - [ ] Ask it to edit `.env`: guard-files blocks it.
-- [ ] Stage a fake AWS key and ask for a commit: gitleaks blocks it locally, and push protection blocks it on GitHub.
+- [ ] Stage a fake AWS key and ask for a commit: gitleaks blocks it locally, and the CI secrets job would catch it on the PR.
 - [ ] Add a failing test and let the session end: the Stop hook keeps Claude working.
 - [ ] Open a PR that adds `uses: some/action@main`: zizmor fails CI.
-- [ ] Open a PR with a vulnerable dependency: dependency review fails.
+- [ ] Open a PR with a vulnerable dependency: pip-audit or npm audit fails.
 - [ ] Open a PR with a public storage account in Terraform: Checkov fails, and the plan comment shows the change.
 - [ ] Run `/factory-lite` on a small bug: you get the research map, an approval prompt, a fix with a test, and two reviewer reports.
-- [ ] Run `/feature-factory` on a tiny feature: you approve the story and brief, the brief is saved, a PR opens, and the Claude review comment is posted.
+- [ ] Run `/feature-factory` on a tiny feature: you approve the story and brief, the brief is saved, and a PR opens.
 - [ ] Merge: the image is signed (`cosign verify` passes), staging deploys by digest, and production waits for your approval.
 
 ## Using it with GitHub Copilot
