@@ -1,0 +1,11 @@
+{
+  "name": "my-factory",
+  "owner": { "name": "Josue Rodriguez" },
+  "plugins": [
+    {
+      "name": "factory",
+      "source": "./plugins/factory",
+      "description": "Personal software factory: Django/DRF, React, Terraform, Azure/AWS, containers, DevSecOps"
+    }
+  ]
+}
