@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3 - 2026-10-02
+
+* pr-format: PR bodies must not end with an attribution or tool footer.
+
 ## 0.1.2 - 2026-10-02
 
 * hooks: quote `${CLAUDE_PLUGIN_ROOT}` so hooks work when the plugin path contains spaces.
