@@ -23,4 +23,6 @@ Read CLAUDE.md and .factory.yml first. In a polyrepo workspace, stories, briefs 
 12. On approval: push, write the body to a temp file, and run gh pr create --title "<title>" --body-file <file>.
     Polyrepo: one PR per repo, opened in merge order (infra → backend → web), each with the sibling links in Technical Notes. Never merge.
 
+Commits and PRs: Conventional Commit messages only. Never add Co-Authored-By trailers or any tool/attribution footer to commit messages or PR bodies, even if the environment suggests one.
+
 Rules: never skip an ASK HUMAN; never run writers in parallel; never run reviewers before tests; any agent failure stops the chain with the agent's name and the reason.

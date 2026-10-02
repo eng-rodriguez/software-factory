@@ -24,6 +24,14 @@ This plugin turns a Claude Code session into a fixed delivery chain: research â†
 
 The plugin is the same everywhere. Everything specific to one project lives in that project.
 
+## No attribution lines
+
+The factory's skills forbid `Co-Authored-By` trailers in commits and "Generated with Claude Code" footers in PRs. Claude Code can still add them by default, so also set this in `~/.claude/settings.json` (or a repo's `.claude/settings.json`):
+
+```json
+"attribution": { "commit": "", "pr": "" }
+```
+
 ## Free tooling only
 
 The factory needs no paid service. Everything it installs runs free on private repos: gitleaks, bandit, pip-audit, npm audit, Checkov, Trivy, tflint, zizmor, actionlint, OWASP ZAP and cosign keyless signing, plus Dependabot, GitHub Environments and OIDC. It does not use GitHub Advanced Security features (CodeQL, dependency review, secret scanning, artifact attestations on private repos) or a hosted AI review. The reviewer agents run locally in your Claude Code session before the PR is opened.

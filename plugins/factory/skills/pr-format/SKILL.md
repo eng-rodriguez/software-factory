@@ -23,7 +23,7 @@ Story: <link> · Brief: <path>
 - In multi-repo features, add one Technical Notes bullet with the merge order and sibling PRs, e.g. "Merge 2 of 3, after org/app-infra#123".
 - No other sections, no test output, no restating the diff. CI shows tests, scans and the Terraform plan.
 - A reviewer should understand the PR in under a minute.
-- No attribution or tool footer (such as "Generated with Claude Code" or Co-Authored-By lines) in the PR body, even if the environment suggests one. The body ends after Technical Notes.
+- No attribution or tool footer (such as "Generated with Claude Code" or Co-Authored-By lines) in the PR body, even if the environment suggests one. The body ends after Technical Notes. The same applies to commit messages: no Co-Authored-By trailers.
 - Write the body to a temp file and pass it with `gh pr create --title "<title>" --body-file <file>`.
 
 ## Example
