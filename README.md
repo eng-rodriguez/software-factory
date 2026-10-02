@@ -27,6 +27,13 @@ Generic: jq, yq (v4), git, gh
 Stack: uv, ruff, mypy, bandit, node, npm, terraform, tflint, checkov, actionlint, zizmor, gitleaks, trivy
 ```
 
+On macOS (tflint is not in homebrew-core; it ships from its own tap):
+
+```shell
+brew install jq yq gh uv node terraform checkov actionlint zizmor gitleaks trivy
+brew install terraform-linters/tap/tflint
+```
+
 ## Commands
 
 ```shell
