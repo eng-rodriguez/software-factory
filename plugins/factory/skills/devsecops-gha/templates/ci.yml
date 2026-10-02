@@ -1,0 +1,246 @@
+# ci.yml — pull request gates. Tags shown for readability: run `pinact run` to pin every action to a full SHA.
+# Adjust paths in the `changes` filters to match .factory.yml. Make only `ci-ok` a required check.
+name: ci
+on:
+  pull_request:
+  merge_group:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { contents: read, pull-requests: read }
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      web: ${{ steps.filter.outputs.web }}
+      infra: ${{ steps.filter.outputs.infra }}
+      container: ${{ steps.filter.outputs.container }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend: ['backend/**', 'apps/**', 'config/**', 'pyproject.toml', 'uv.lock', 'requirements*.txt']
+            web: ['web/**']
+            infra: ['infra/**']
+            container: ['Dockerfile*', 'deploy/**', 'backend/**', 'apps/**']
+            workflows: ['.github/**']
+
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0, persist-credentials: false }
+      - name: gitleaks
+        env:
+          GITLEAKS_VERSION: 8.21.2
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar -xz gitleaks
+          ./gitleaks detect --no-banner --redact --log-opts="origin/${GITHUB_BASE_REF:-main}..HEAD"
+
+  codeql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions: { contents: read, security-events: write }
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript, actions]
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: github/codeql-action/init@v3
+        with: { languages: "${{ matrix.language }}", queries: security-extended }
+      - uses: github/codeql-action/analyze@v3
+
+  python:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults: { run: { working-directory: backend } }
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: postgres, POSTGRES_DB: app }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/app
+      DJANGO_SETTINGS_MODULE: config.settings
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: astral-sh/setup-uv@v5
+        with: { enable-cache: true }
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy .
+      - run: uv run bandit -r . -x ./tests,./.venv -ll
+      - run: uv run pip-audit --strict
+      - run: uv run python manage.py makemigrations --check --dry-run
+      - run: uv run pytest -q --cov --cov-fail-under=80
+
+  web:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults: { run: { working-directory: web } }
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm, cache-dependency-path: web/package-lock.json }
+      - run: npm ci --ignore-scripts
+      - run: npm audit --audit-level=high --omit=dev
+      - run: npm run lint
+      - run: npx tsc --noEmit
+      - run: npx vitest run
+
+  dependency-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { contents: read, pull-requests: write }
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          deny-licenses: GPL-3.0, AGPL-3.0
+          comment-summary-in-pr: on-failure
+
+  iac:
+    needs: changes
+    if: needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: terraform-linters/setup-tflint@v4
+      - run: tflint --init && tflint --chdir=infra --recursive
+      - uses: bridgecrewio/checkov-action@v12
+        with: { directory: infra, framework: terraform, soft_fail: false, quiet: true }
+      - uses: aquasecurity/trivy-action@0.28.0
+        with: { scan-type: config, scan-ref: infra, severity: "HIGH,CRITICAL", exit-code: "1" }
+
+  tf-plan:
+    needs: changes
+    if: needs.changes.outputs.infra == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Read-only plan identity, trusted for repo:<owner>/<repo>:pull_request
+    permissions: { contents: read, id-token: write, pull-requests: write }
+    env:
+      TF_DIR: infra/envs/dev
+      ARM_USE_OIDC: "true"
+      ARM_CLIENT_ID: ${{ vars.AZURE_PLAN_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      # AWS: replace with aws-actions/configure-aws-credentials@v4 { role-to-assume: vars.AWS_PLAN_ROLE_ARN, aws-region: vars.AWS_REGION }
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_PLAN_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_wrapper: false }
+      - run: terraform -chdir="$TF_DIR" init -input=false -lock=false
+      - run: terraform -chdir="$TF_DIR" plan -input=false -lock=false -no-color -out=tf.plan
+      - name: Post plan summary
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          {
+            echo "### Terraform plan — \`$TF_DIR\`"
+            echo '<details><summary>Show plan</summary>'
+            echo; echo '```'
+            terraform -chdir="$TF_DIR" show -no-color tf.plan | tail -c 60000
+            echo '```'; echo '</details>'
+          } > plan.md
+          gh pr comment "$PR" --body-file plan.md --edit-last || gh pr comment "$PR" --body-file plan.md
+
+  container:
+    needs: changes
+    if: needs.changes.outputs.container == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - run: docker build -t app:ci .
+      - uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: app:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+  workflows:
+    needs: changes
+    if: needs.changes.outputs.workflows == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: astral-sh/setup-uv@v5
+      - run: uvx zizmor --min-severity medium --format plain .github/workflows
+      - name: actionlint
+        run: |
+          bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color
+
+  scope:
+    if: startsWith(github.head_ref, 'feat/') || startsWith(github.head_ref, 'fix/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0, persist-credentials: false }
+      - name: Changed files must appear in the brief
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          slug="${HEAD_REF#*/}"
+          brief="docs/briefs/${slug}.md"
+          [ -f "$brief" ] || { echo "::notice::No brief at $brief; scope check skipped"; exit 0; }
+          out=0
+          while IFS= read -r f; do
+            case "$f" in docs/*|*/tests/*|tests/*|*.test.ts|*.test.tsx|*/migrations/*|schema.yml|*/schema.yml|e2e/*) continue ;; esac
+            grep -qF "$f" "$brief" || { echo "::error file=$f::Not listed in $brief (Files that will change)"; out=1; }
+          done < <(git diff --name-only "origin/${BASE_REF}...HEAD")
+          exit $out
+
+  ci-ok:
+    if: always()
+    needs: [changes, secrets, codeql, python, web, dependency-review, iac, tf-plan, container, workflows, scope]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: All required jobs passed or were skipped
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "$RESULTS"
+          for r in $RESULTS; do
+            case "$r" in success|skipped) ;; *) echo "::error::A required job ended with: $r"; exit 1 ;; esac
+          done

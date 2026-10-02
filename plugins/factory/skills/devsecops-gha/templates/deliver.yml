@@ -1,0 +1,181 @@
+# deliver.yml — build once, scan, SBOM, sign, attest, deploy by digest. Pin actions with `pinact run`.
+# Each GitHub Environment (staging, production) defines variables:
+#   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, AKS_RESOURCE_GROUP, AKS_CLUSTER,
+#   TF_DIR, HELM_RELEASE, HELM_NAMESPACE, HELM_VALUES, BASE_URL
+# production: required reviewers + main-only branch restriction.
+# AWS: swap azure/login for aws-actions/configure-aws-credentials (role-to-assume) and GHCR for ECR.
+name: deliver
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deliver
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions: { contents: read, packages: write, id-token: write, attestations: write }
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      - id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+          provenance: false
+      - uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+      - uses: actions/attest-build-provenance@v2
+        with: { subject-name: "${{ env.IMAGE }}", subject-digest: "${{ steps.push.outputs.digest }}", push-to-registry: true }
+      - uses: actions/attest-sbom@v2
+        with: { subject-name: "${{ env.IMAGE }}", subject-digest: "${{ steps.push.outputs.digest }}", sbom-path: sbom.spdx.json, push-to-registry: true }
+      - uses: sigstore/cosign-installer@v3
+      - name: Sign image (keyless)
+        env:
+          REF: ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
+        run: cosign sign --yes "$REF"
+
+  deploy-staging:
+    needs: build
+    environment: staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions: { contents: read, id-token: write }
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_wrapper: false }
+      - name: Terraform apply
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          TF_DIR: ${{ vars.TF_DIR }}
+        run: |
+          terraform -chdir="$TF_DIR" init -input=false
+          terraform -chdir="$TF_DIR" apply -input=false -auto-approve
+      - uses: sigstore/cosign-installer@v3
+      - name: Verify signature
+        env:
+          REF: ${{ env.IMAGE }}@${{ needs.build.outputs.digest }}
+          IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/deliver.yml@refs/heads/main
+        run: |
+          cosign verify "$REF" \
+            --certificate-identity "$IDENTITY" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
+      - uses: azure/setup-kubectl@v4
+      - uses: azure/setup-helm@v4
+      - name: Helm deploy by digest
+        env:
+          RG: ${{ vars.AKS_RESOURCE_GROUP }}
+          CLUSTER: ${{ vars.AKS_CLUSTER }}
+          RELEASE: ${{ vars.HELM_RELEASE }}
+          NS: ${{ vars.HELM_NAMESPACE }}
+          VALUES: ${{ vars.HELM_VALUES }}
+          DIGEST: ${{ needs.build.outputs.digest }}
+        run: |
+          az aks get-credentials -g "$RG" -n "$CLUSTER" --overwrite-existing
+          helm upgrade --install "$RELEASE" deploy/chart -n "$NS" -f "$VALUES" \
+            --set image.repository="$IMAGE" --set image.digest="$DIGEST" --wait --timeout 10m
+      - name: Smoke test
+        env:
+          BASE_URL: ${{ vars.BASE_URL }}
+        run: bash scripts/smoke.sh "$BASE_URL"
+
+  dast:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging
+    permissions: { contents: read }
+    steps:
+      - uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: ${{ vars.BASE_URL }}
+          fail_action: true
+          allow_issue_writing: false
+
+  deploy-production:
+    needs: [build, dast]
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions: { contents: read, id-token: write }
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_wrapper: false }
+      - name: Terraform apply
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          TF_DIR: ${{ vars.TF_DIR }}
+        run: |
+          terraform -chdir="$TF_DIR" init -input=false
+          terraform -chdir="$TF_DIR" apply -input=false -auto-approve
+      - uses: sigstore/cosign-installer@v3
+      - name: Verify signature
+        env:
+          REF: ${{ env.IMAGE }}@${{ needs.build.outputs.digest }}
+          IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/deliver.yml@refs/heads/main
+        run: |
+          cosign verify "$REF" \
+            --certificate-identity "$IDENTITY" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
+      - uses: azure/setup-kubectl@v4
+      - uses: azure/setup-helm@v4
+      - name: Helm deploy by digest
+        env:
+          RG: ${{ vars.AKS_RESOURCE_GROUP }}
+          CLUSTER: ${{ vars.AKS_CLUSTER }}
+          RELEASE: ${{ vars.HELM_RELEASE }}
+          NS: ${{ vars.HELM_NAMESPACE }}
+          VALUES: ${{ vars.HELM_VALUES }}
+          DIGEST: ${{ needs.build.outputs.digest }}
+        run: |
+          az aks get-credentials -g "$RG" -n "$CLUSTER" --overwrite-existing
+          helm upgrade --install "$RELEASE" deploy/chart -n "$NS" -f "$VALUES" \
+            --set image.repository="$IMAGE" --set image.digest="$DIGEST" --wait --timeout 10m
+      - name: Smoke test
+        env:
+          BASE_URL: ${{ vars.BASE_URL }}
+        run: bash scripts/smoke.sh "$BASE_URL"

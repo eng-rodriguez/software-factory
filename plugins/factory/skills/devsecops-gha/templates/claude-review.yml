@@ -1,0 +1,33 @@
+# claude-review.yml — AI review with the factory plugin. Pin actions with `pinact run`.
+name: claude-review
+on:
+  pull_request: { types: [opened, synchronize, ready_for_review] }
+permissions: { contents: read, pull-requests: write, id-token: write }
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  review:
+    # Skip drafts, forks (keeps the API key away from external contributors) and Dependabot.
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0, persist-credentials: false }
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          plugin_marketplaces: "https://github.com/<you>/software-factory.git"
+          plugins: "factory@my-factory"
+          prompt: |
+            Review PR #${{ github.event.pull_request.number }} in ${{ github.repository }}.
+            Use the factory:pr-reviewer and factory:security-reviewer agents. Post one comment
+            with Critical / Important / Minor findings and file:line references. Do not push commits.
+          claude_args: >-
+            --model claude-sonnet-5-5
+            --max-turns 15
+            --allowedTools "Read,Grep,Glob,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*)"
