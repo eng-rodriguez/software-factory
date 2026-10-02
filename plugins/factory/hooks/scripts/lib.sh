@@ -18,8 +18,8 @@ area_path() {
 
 # Files changed on this branch, staged, unstaged or new
 changed_files() {
-  local base; base=$(git merge-base HEAD "origin/$(default_branch)" 2>/dev/null || git rev-parse HEAD)
-  { git diff --name-only "$base"; git diff --name-only --cached; git ls-files --others --exclude-standard; } | sort -u
+  local base; base=$(git merge-base HEAD "origin/$(default_branch)" 2>/dev/null || git rev-parse HEAD 2>/dev/null)
+  { [[ -n "$base" ]] && git diff --name-only "$base"; git diff --name-only --cached; git ls-files --others --exclude-standard; } 2>/dev/null | sort -u
 }
 
 # touched <area> <extension-regex> → true if a changed file under the area matches
