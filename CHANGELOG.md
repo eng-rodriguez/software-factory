@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2 - 2026-10-02
+
+* hooks: quote `${CLAUDE_PLUGIN_ROOT}` so hooks work when the plugin path contains spaces.
+
 ## 0.1.1 - 2026-10-02
 
 * hooks: `changed_files` no longer prints git errors in repos without commits.
