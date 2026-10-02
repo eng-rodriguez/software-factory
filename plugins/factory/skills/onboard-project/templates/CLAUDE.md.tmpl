@@ -1,0 +1,37 @@
+# <Project name>
+<One sentence: what it does and for whom.> Context: personal | work (<team>).
+
+## Stack (installed versions are the source of truth; check them, use Context7 for docs)
+- Backend: Python 3.12, Django 5.x, DRF, Celery + Redis, PostgreSQL 16
+- Frontend: React 18, TypeScript (strict), Vite, TanStack Query, generated client from schema.yml
+- Infra: Terraform 1.9, <azurerm|aws> provider, <AKS|EKS|Container Apps|ECS>, Helm
+- CI/CD: GitHub Actions (ci, claude-review, deliver), OIDC to <Azure|AWS>
+
+## Bounded contexts
+| App | Owns | Talks to |
+| --- | --- | --- |
+| <app> | <aggregates> | <context> (service call | events) |
+
+## Commands
+- make dev · make test · make lint · make typecheck · make migrations-check
+- npm --prefix web run dev | test | lint
+- make tf-plan ENV=dev   (never apply locally)
+
+## Paths
+backend: apps/ · web: web/ · infra: infra/ · deploy: deploy/ · briefs: docs/briefs/
+
+## Architecture rules (project-specific; general rules live in the factory plugin)
+- Tenant isolation: <how querysets are scoped>.
+- Auth: <session + CSRF | JWT> via <library>; permissions in <path>.
+- Events: <outbox table and relay>.
+
+## Environments
+dev (auto), staging (main), production (approval). Cloud: <subscription/account ids by name, not secrets>.
+
+## Don't
+- Log tokens, PII or raw payment payloads.
+- Add a dependency without noting it in the brief.
+- Edit migrations that exist on main.
+
+## Lessons (append when the AI surprises you)
+- <date>: <rule that would have prevented the mistake>

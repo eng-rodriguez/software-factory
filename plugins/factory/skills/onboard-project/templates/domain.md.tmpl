@@ -1,0 +1,19 @@
+# Domain
+
+## Ubiquitous language
+Add a term here before using it in code. Agents use these names exactly.
+
+| Term | Meaning | Context | Code name |
+| --- | --- | --- | --- |
+| <Order> | <A customer's request to buy one or more items> | <orders> | `orders.Order` |
+
+## Bounded contexts
+| Context (Django app) | Type | Owns | Upstream of | Downstream of |
+| --- | --- | --- | --- | --- |
+| <orders> | core \| supporting \| generic | <aggregates> | <contexts> | <contexts> |
+
+## Context map
+<How contexts integrate: service calls, events (with event names), shared kernel, anti-corruption layers.>
+
+## Invariants
+- <Aggregate>: <rule that must always hold>

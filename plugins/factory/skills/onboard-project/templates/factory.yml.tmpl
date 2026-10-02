@@ -1,0 +1,19 @@
+# .factory.yml — read by the factory hooks and orchestrators. Delete areas that don't exist.
+# Monorepo example:
+layout: monorepo            # monorepo | polyrepo
+default_branch: main
+areas:
+  backend: { path: backend, stack: django }
+  web:     { path: web, stack: react }
+  infra:   { path: infra, stack: terraform }
+  deploy:  { path: deploy, stack: helm }
+
+# Polyrepo example (one layer per repo):
+# layout: polyrepo
+# default_branch: main
+# home: true                # only in the repo that holds stories, briefs and ADRs
+# areas:
+#   backend: { path: ., stack: django }
+# repos:                    # only in the home repo
+#   web:   { path: ../app-web }
+#   infra: { path: ../app-infra }
