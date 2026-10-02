@@ -2,5 +2,9 @@
   "name": "factory",
   "version": "0.1.0",
   "description": "Agents, principles, guardrails and CI templates for my projects",
-  "author": { "name": "Josue Rodriguez" }
+  "author": {
+    "name": "Josue Rodriguez"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/eng-rodriguez/software-factory"
 }

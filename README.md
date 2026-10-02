@@ -54,4 +54,8 @@ claude plugin marketplace add ./software-factory
 claude plugin install factory@my-factory
 ```
 
-The plugin repo is private, so `claude-review.yml` in other repos needs read access to it (a fine-grained token, or make this repo public; it holds no secrets).
+`claude-review.yml` installs this plugin straight from the public repo, so CI needs no extra token.
+
+## License
+
+[MIT](LICENSE.md)
