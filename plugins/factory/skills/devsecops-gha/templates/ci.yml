@@ -1,4 +1,4 @@
-# ci.yml — pull request gates. Tags shown for readability: run `pinact run` to pin every action to a full SHA.
+# ci.yml — pull request gates. Free tooling only: no GitHub Advanced Security features. Tags shown for readability: run `pinact run` to pin every action to a full SHA.
 # Adjust paths in the `changes` filters to match .factory.yml. Make only `ci-ok` a required check.
 name: ci
 on:
@@ -47,21 +47,6 @@ jobs:
           curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar -xz gitleaks
           ./gitleaks detect --no-banner --redact --log-opts="origin/${GITHUB_BASE_REF:-main}..HEAD"
 
-  codeql:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions: { contents: read, security-events: write }
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [python, javascript-typescript, actions]
-    steps:
-      - uses: actions/checkout@v4
-        with: { persist-credentials: false }
-      - uses: github/codeql-action/init@v3
-        with: { languages: "${{ matrix.language }}", queries: security-extended }
-      - uses: github/codeql-action/analyze@v3
-
   python:
     needs: changes
     if: needs.changes.outputs.backend == 'true'
@@ -108,19 +93,6 @@ jobs:
       - run: npm run lint
       - run: npx tsc --noEmit
       - run: npx vitest run
-
-  dependency-review:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions: { contents: read, pull-requests: write }
-    steps:
-      - uses: actions/checkout@v4
-        with: { persist-credentials: false }
-      - uses: actions/dependency-review-action@v4
-        with:
-          fail-on-severity: high
-          deny-licenses: GPL-3.0, AGPL-3.0
-          comment-summary-in-pr: on-failure
 
   iac:
     needs: changes
@@ -232,7 +204,7 @@ jobs:
 
   ci-ok:
     if: always()
-    needs: [changes, secrets, codeql, python, web, dependency-review, iac, tf-plan, container, workflows, scope]
+    needs: [changes, secrets, python, web, iac, tf-plan, container, workflows, scope]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:

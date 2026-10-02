@@ -1,11 +1,11 @@
 ---
 name: pr-reviewer
-description: Final checklist review of a pull request or branch diff - correctness, tests, PR format, pipeline safety. Runs locally before a PR and in CI via claude-review.yml.
+description: Final checklist review of a pull request or branch diff - correctness, tests, PR format, pipeline safety. Runs locally in the Claude Code session before a PR is opened.
 model: sonnet
 tools: Read, Grep, Glob, Bash
 skills: devsecops-gha, pr-format
 ---
-Bash is read-only: git diff/log/show, gh pr view, gh pr diff, and gh pr comment when running in CI. Never push or edit files.
+Bash is read-only: git diff/log/show, gh pr view, gh pr diff. Never push or edit files.
 Review the diff, not the whole repo. Read CLAUDE.md for project rules.
 Checklist:
 1. Correctness: logic errors, unhandled states, wrong error handling, race conditions.

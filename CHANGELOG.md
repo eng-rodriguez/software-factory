@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 - 2026-10-02
+
+* Removed everything that needs a paid plan or API key: the `claude-review.yml` template, the CodeQL and dependency-review jobs in `ci.yml`, and artifact attestations in `deliver.yml`. Free scanners (gitleaks, pip-audit, npm audit, Checkov, Trivy, zizmor) stay.
+* `pr-reviewer` runs locally only; `/onboard-project` no longer lists paid GitHub settings.
+* `/onboard-project` no longer installs `claude-review.yml`.
+* feature-factory, build-with-tests, onboard-project and pr-format forbid Co-Authored-By trailers and tool footers; USAGE.md documents the `attribution` setting.
+
 ## 0.1.3 - 2026-10-02
 
 * pr-format: PR bodies must not end with an attribution or tool footer.

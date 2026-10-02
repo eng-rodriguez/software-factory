@@ -63,8 +63,6 @@ claude plugin marketplace add ./software-factory
 claude plugin install factory@my-factory
 ```
 
-`claude-review.yml` installs this plugin straight from the public repo, so CI needs no extra token.
-
 ## License
 
 [MIT](LICENSE.md)
