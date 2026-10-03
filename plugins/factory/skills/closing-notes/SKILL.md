@@ -10,7 +10,7 @@ Input: a slug (for example `bulk-cancel`). If none is given, derive it from the 
    - Story `docs/stories/<slug>.md`: the goal and acceptance criteria. Brief `docs/briefs/<slug>.md`: layers touched, risk, decisions, out-of-scope. For a `/factory-lite` change with no story, use the plan shown to the human.
    - Test results and the reviewers' findings from this session: counts by severity, what was fixed, what was left open.
    - Scale in words from `git diff --stat <default-branch>...HEAD` ("a small change", "touches the API and the screens"), never a file list.
-   - ADRs written, and the PR (`gh pr view <branch> --json url,state,mergedAt`) and linked issue if they exist.
+   - ADRs written, and the PR (`gh pr view <branch> --json url,state,mergedAt`) if it exists. The ticket key and link come from the story's Source line.
    - Risk level from the brief or the project's CLAUDE.md; "Standard" if none is stated.
 2. Write `docs/closing-notes/YYYY-MM-DD-<slug>.md` from [template.md](template.md). Create the folder if missing.
 3. Keep it short and plain.
@@ -20,5 +20,5 @@ Input: a slug (for example `bulk-cancel`). If none is given, derive it from the 
    - Status: `Ready for review` while the PR is open, `Shipped` only when the PR is merged, `Partly shipped` or `Not shipped` otherwise.
    - No secrets, customer names, personal data or internal URLs.
 4. If the file already exists, this is an update: refresh Status, Date and Links from the PR state and change nothing else unless asked.
-5. ASK HUMAN: approve the notes. Then offer to post them as a comment on the linked issue or the PR; post only if they say yes.
+5. ASK HUMAN: approve the notes. Then print the final notes in one plain block, with simple bold headings and bullets, ready to copy and paste into the ticket tracker (Jira, GitHub, Linear or any other). Never post to a tracker or the PR yourself.
 6. Commit with `docs(notes): add closing notes for <slug>` (or `update` when refreshing). No Co-Authored-By trailer or tool footer.

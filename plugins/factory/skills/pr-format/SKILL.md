@@ -13,13 +13,14 @@ Types: feat, fix, refactor, perf, test, docs, build, ci, chore, revert. Add `!` 
 
 ## Why
 <2–4 sentences: the problem or goal.>
-Story: <link> · Brief: <path>
+Story: <ticket key or link> · Brief: <path>
 
 ## Technical Notes
 - <3–7 one-line bullets: migrations, API or contract changes, infra changes, feature flags, risks and rollback, follow-ups>
 ```
 
 ## Rules
+- When a brief has manual verification steps, add one Technical Notes bullet linking them, e.g. "Manual verification: docs/briefs/bulk-cancel.md#manual-verification".
 - In multi-repo features, add one Technical Notes bullet with the merge order and sibling PRs, e.g. "Merge 2 of 3, after org/app-infra#123".
 - No other sections, no test output, no restating the diff. CI shows tests, scans and the Terraform plan.
 - A reviewer should understand the PR in under a minute.

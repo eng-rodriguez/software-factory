@@ -97,10 +97,10 @@ Start a fresh session for each task. The plugin, hooks and `CLAUDE.md` load auto
 | Command | Use it for | What runs |
 | --- | --- | --- |
 | `/factory-lite <change>` | Bug fixes and small changes (most days) | researcher → plan (you approve) → builder → validator + security reviewer |
-| `/feature-factory <feature>` | New features or meaningful changes | The full chain below, with 3 approvals in the session |
+| `/feature-factory <feature or pasted ticket>` | New features or meaningful changes | The full chain below, with 3 approvals in the session |
 | `/explore <question>` | Learning an unfamiliar codebase or area | Researcher only; writes nothing |
 | `/adr <decision>` | Recording a decision made in conversation | Writes `docs/adr/NNNN-title.md` |
-| `/closing-notes [slug]` | Finishing a ticket, story or issue | Writes a short plain-language note to `docs/closing-notes/` for product managers, scrum masters and leadership |
+| `/closing-notes [slug]` | Finishing a ticket, story or issue | Writes a short plain-language note to `docs/closing-notes/` for product managers, scrum masters and leadership, and prints it ready to paste into your ticket tracker. It never posts anywhere itself |
 | `/onboard-project` | First use in a repo | See above |
 
 Examples:
@@ -114,25 +114,27 @@ Examples:
 
 You can also call an agent directly with `@factory:<name>`, for example `@factory:security-reviewer review my staged changes`.
 
-**For bugs**, `/factory-lite` writes a failing test before the fix. When it finishes, it offers to open a PR.
+**For bugs**, `/factory-lite` writes a failing test before the fix. When it finishes, it shows a few manual "How to verify" steps and offers to open a PR.
+
+**Tickets from Jira, GitHub or Linear.** The factory has no tracker integration. Paste the ticket text after the command (`/feature-factory` followed by the pasted ticket). Its key and link carry through to the story, the PR's Why section and the closing notes. When the work is done, paste the closing notes back into the ticket.
 
 ## The full feature chain
 
 `/feature-factory` runs these steps. The steps marked **you** stop and wait for your answer.
 
 1. **Research.** `codebase-researcher` maps the relevant code, patterns and risks.
-2. **Story.** `story-writer` drafts a user story, acceptance criteria, edge cases and what is out of scope.
+2. **Story.** `story-writer` drafts a user story, acceptance criteria, edge cases and what is out of scope. If you pasted a ticket, it keeps the ticket's key and link and flags gaps as questions.
 3. **You approve the story.** Reply approved, ask for changes, or reject. Once approved, it is saved to `docs/stories/<slug>.md`.
-4. **Brief.** `architect` writes `docs/briefs/<slug>.md`, covering which layers are touched, the domain model, the API contract, data consistency, security threats, required tests, and which files will change. Significant decisions get an ADR.
+4. **Brief.** `architect` writes `docs/briefs/<slug>.md`, covering which layers are touched, the domain model, the API contract, data consistency, security threats, required tests, contract artifacts to update (API collections such as Postman, OpenAPI schema, generated clients, API docs), docs impact, observability, and which files will change. Significant decisions get an ADR.
 5. **You approve the brief.** This is the most valuable review: every builder after it follows the brief.
 6. **Branch.** It creates `feat/<slug>` and commits the story and brief first.
 7. **Build.** Only the builders for the touched layers run, one after another: django → react → ai → infra → pipeline. Each one commits its work.
-8. **Acceptance tests.** `test-verifier` writes at least one test for every acceptance criterion.
+8. **Acceptance tests.** `test-verifier` writes at least one test for every acceptance criterion, using only the test tools the project already has. It also adds a **Manual verification** section to the brief: numbered, copy-pasteable steps with expected results.
 9. **Review.** `implementation-validator`, `design-reviewer` and `security-reviewer` run in parallel and read only.
 10. **Fix loop.** Critical findings go back to the builder that owns them, up to 3 times. On the third attempt the builder runs on Opus. If the issue is still not fixed, the chain stops and recommends a separate session on a stronger model.
-11. **You do the final review.** You see every finding, the Terraform plan summary, and the drafted PR title and body.
+11. **You do the final review.** You see every finding, the Terraform plan summary, the drafted PR title and body, the closing notes, and the manual verification steps. For High-risk work you run those steps and confirm before the PR opens.
 12. **PR.** It commits the closing notes, pushes and opens the PR. It never merges.
-13. **After the merge.** Tell Claude the PR is merged, or run `/closing-notes <slug>`, and the note's status changes to Shipped.
+13. **After the merge.** Tell Claude the PR is merged, or run `/closing-notes <slug>`, and the note's status changes to Shipped. Copy the printed note into your tracker.
 
 Because the story and brief are files, a later session or a colleague can pick the work up from `docs/`.
 

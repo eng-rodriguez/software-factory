@@ -2,7 +2,7 @@
 name: feature-factory
 description: Runs the full feature chain with human approvals. Use when asked to build, ship, or implement a feature end to end, or "run the factory".
 ---
-Input: a one-sentence feature request. Derive a <slug> (kebab-case, at most 40 characters) and show it.
+Input: a one-sentence feature request, or a ticket pasted from any tracker (Jira, GitHub, Linear). For a pasted ticket, keep its key and link; never call the tracker's API. Derive a <slug> (kebab-case, at most 40 characters, prefixed with the lowercase ticket key when there is one, e.g. proj-123-bulk-cancel) and show it.
 Read CLAUDE.md and .factory.yml first. In a polyrepo workspace, stories, briefs and ADRs live in the home repo.
 
 1. factory:codebase-researcher — map the area. Run one per touched area or repo, in parallel, when the feature spans several.
@@ -14,12 +14,12 @@ Read CLAUDE.md and .factory.yml first. In a polyrepo workspace, stories, briefs 
 7. Builders in sequence, only for layers listed in the brief's "Layers touched":
    factory:django-builder → factory:react-builder → factory:ai-engineer → factory:infra-builder → factory:pipeline-builder.
    Pass each: the story and brief paths, the research, and the previous builders' summaries. Commit after each builder with a Conventional Commit message.
-8. factory:test-verifier — acceptance tests for every criterion.
+8. factory:test-verifier — acceptance tests for every criterion, plus the Manual verification section in the brief.
 9. In parallel (read-only): factory:implementation-validator, factory:design-reviewer, factory:security-reviewer.
 10. Merge findings by severity and remove duplicates. Any Critical → send it to the owning builder with the finding and the failing test, then repeat 8–9.
     Loops 1–2: the builder as configured. Loop 3: re-run the builder with model opus.
     Still Critical after loop 3 → stop, show the finding, and recommend a separate session started with --model claude-fable-5-1 for that problem.
-11. Draft the PR title and body with the pr-format skill, and draft the closing notes with the closing-notes skill. ASK HUMAN: final review. Show all findings (Important and Minor too), the Terraform plan summary if any, the PR title and body, and the closing notes.
+11. Draft the PR title and body with the pr-format skill, and draft the closing notes with the closing-notes skill. ASK HUMAN: final review. Show all findings (Important and Minor too), the Terraform plan summary if any, the PR title and body (with a Technical Notes bullet linking the brief's Manual verification section), the closing notes, and the manual verification steps. For High-risk work the human runs the manual steps and confirms before the PR is opened.
 12. On approval: commit the closing notes on the branch, push, write the body to a temp file, and run gh pr create --title "<title>" --body-file <file>.
     Polyrepo: one PR per repo, opened in merge order (infra → backend → web), each with the sibling links in Technical Notes. Never merge.
 13. When the human says the PR is merged (or runs /closing-notes <slug>), run the closing-notes skill in update mode so Status becomes Shipped.

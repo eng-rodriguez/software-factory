@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0 - 2026-10-02
+
+* Contract artifacts: the brief lists API collections (Postman or similar, only if the repo has one), OpenAPI schema, generated clients and API docs to update; `django-builder` updates them in place and `implementation-validator` checks them. `/onboard-project` detects and records them in CLAUDE.md.
+* Manual verification: `test-verifier` adds numbered, copy-pasteable steps to the brief; the PR links them, `/factory-lite` shows "How to verify" steps, and High-risk work confirms them before the PR opens.
+* Docs impact and observability sections in the brief, enforced by builders and the validator.
+* `test-verifier` uses only the project's existing test tools and never adds a framework.
+* Tickets from any tracker by copy and paste: `/feature-factory` and `story-writer` accept a pasted ticket and keep its key and link. `/closing-notes` prints copy-ready text and never posts to a tracker or PR.
+* Dependabot template ignores major-version updates for application dependencies.
+
 ## 0.3.1 - 2026-10-02
 
 * The factory no longer creates, changes or recommends rulesets or branch protection. They belong to the repo owner or organization, and existing ones are left alone. `/onboard-project`, `pipeline-builder`, the devsecops-gha skill, templates and USAGE.md updated.

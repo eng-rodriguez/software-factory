@@ -8,6 +8,8 @@ Templates are in [templates/](templates/). Never restructure the repo; record th
    - Layout: monorepo (backend/web/infra together) or polyrepo (one layer here, siblings nearby).
    - Areas and paths: Django (manage.py, pyproject), React (package.json with react), Terraform (*.tf), Helm/Kustomize, Dockerfile.
    - Commands: Makefile targets, pyproject scripts, package.json scripts, uv vs pip.
+   - API contract artifacts: an API collection (a `postman/` folder or `*.postman_collection.json`), an OpenAPI schema, a generated client. Record their paths in CLAUDE.md; "none" if absent. Never restructure an existing collection.
+   - Test tools already in use (pytest, Vitest, Playwright, ...), recorded in CLAUDE.md.
    - Existing CLAUDE.md / AGENTS.md, .github/workflows, CODEOWNERS, docs/.
    - Default branch: `git symbolic-ref refs/remotes/origin/HEAD`.
    - Work or personal: ask the human if unclear. For work repos write AGENTS.md as the canonical file and CLAUDE.md containing only `@AGENTS.md`.

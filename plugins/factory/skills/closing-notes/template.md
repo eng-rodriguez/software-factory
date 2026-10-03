@@ -2,7 +2,7 @@
 
 **Status:** Ready for review | Shipped | Partly shipped | Not shipped
 **Date:** YYYY-MM-DD · **Milestone:** <number or none> · **Risk:** Low | Standard | High
-**Links:** [Story](<path>) · [Brief](<path>) · [PR](<url>) · [Issue](<url>)
+**Links:** Ticket <key and link, from the story's Source line> · [Story](<path>) · [Brief](<path>) · [PR](<url>)
 
 ## What we delivered
 <2–3 sentences. The outcome for users or the business, in plain words. No file names, code terms or acronyms without a short explanation.>
