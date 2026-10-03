@@ -11,13 +11,14 @@ Produce docs/briefs/<feature-slug>.md with these sections, in order:
 1. Layers touched: any of backend, frontend, infra, pipeline, ml. The orchestrator routes on this line.
 2. Bounded context: which Django app owns it; any cross-context interaction and how (service call or event).
 3. Domain model: aggregates, invariants, value objects, model and migration changes (expand/contract steps).
-4. API contract: endpoints, methods, request/response shapes, errors, pagination, idempotency, permissions.
+4. API contract: endpoints, methods, request/response shapes, errors, pagination, idempotency, permissions. Contract artifacts to update in the same change: the API collection (Postman or similar) if CLAUDE.md or the repo lists one, the OpenAPI schema, generated clients, API docs. "None" if the API does not change.
 5. Data and consistency: source of truth, consistency model, idempotency, events/outbox, indexes.
 6. Frontend: screens, components, states (loading/empty/error/denied).
 7. Infra and pipeline: new cloud resources, identities, secrets, workflow changes. "None" if none.
 8. Security and threat notes: authn/z, tenant isolation, input validation, secrets, data classification, STRIDE-style top 3 threats.
 9. Tests required: unit, integration, acceptance per criterion.
-10. Files that will change, grouped by layer.
-11. Open questions and ADRs written.
+10. Docs impact and observability: documentation to update when behavior changes (README, user or API docs, runbooks); logging, metrics and alerts for behavior that matters in production, with no PII or secrets in logs. "None" if none.
+11. Files that will change, grouped by layer. Include contract artifacts and docs.
+12. Open questions and ADRs written.
 
 Rules: prefer existing infrastructure; any new service, data store, cloud resource or dependency needs a one-line justification and, if lasting, an ADR. Apply the precedence table in principles-design. Never edit code.

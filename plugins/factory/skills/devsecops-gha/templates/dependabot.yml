@@ -1,8 +1,11 @@
 # .github/dependabot.yml — adjust directories to match .factory.yml.
+# Major-version updates are ignored for application dependencies so they only happen when a person
+# decides to upgrade (open a story). To allow one, remove its ignore line or bump the version by hand.
+# GitHub Actions majors stay enabled: actions are pinned to SHAs and each update is reviewed.
 version: 2
 updates:
   - { package-ecosystem: github-actions, directory: /, schedule: { interval: weekly }, groups: { actions: { patterns: ["*"] } }, commit-message: { prefix: ci } }
-  - { package-ecosystem: pip, directory: /, schedule: { interval: weekly }, groups: { python-minor: { update-types: [minor, patch] } }, commit-message: { prefix: build, include: scope } }
-  - { package-ecosystem: npm, directory: /web, schedule: { interval: weekly }, groups: { npm-minor: { update-types: [minor, patch] } }, commit-message: { prefix: build, include: scope } }
-  - { package-ecosystem: docker, directory: /, schedule: { interval: weekly }, commit-message: { prefix: build } }
-  - { package-ecosystem: terraform, directory: /infra, schedule: { interval: weekly }, commit-message: { prefix: build } }
+  - { package-ecosystem: pip, directory: /, schedule: { interval: weekly }, groups: { python-minor: { update-types: [minor, patch] } }, ignore: [{ dependency-name: "*", update-types: ["version-update:semver-major"] }], commit-message: { prefix: build, include: scope } }
+  - { package-ecosystem: npm, directory: /web, schedule: { interval: weekly }, groups: { npm-minor: { update-types: [minor, patch] } }, ignore: [{ dependency-name: "*", update-types: ["version-update:semver-major"] }], commit-message: { prefix: build, include: scope } }
+  - { package-ecosystem: docker, directory: /, schedule: { interval: weekly }, ignore: [{ dependency-name: "*", update-types: ["version-update:semver-major"] }], commit-message: { prefix: build } }
+  - { package-ecosystem: terraform, directory: /infra, schedule: { interval: weekly }, ignore: [{ dependency-name: "*", update-types: ["version-update:semver-major"] }], commit-message: { prefix: build } }
