@@ -1,5 +1,5 @@
 # ci.yml — pull request gates. Free tooling only: no GitHub Advanced Security features. Tags shown for readability: run `pinact run` to pin every action to a full SHA.
-# Adjust paths in the `changes` filters to match .factory.yml. Make only `ci-ok` a required check.
+# Adjust paths in the `changes` filters to match .factory.yml.  `ci-ok` is the single job to require if your repo uses required checks.
 name: ci
 on:
   pull_request:

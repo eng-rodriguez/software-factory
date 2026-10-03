@@ -7,7 +7,7 @@ description: Rules for GitHub Actions pipelines and supply-chain security. Use w
 2. Top-level `permissions: contents: read`; jobs request only what they need (id-token: write for OIDC, security-events: write for SARIF).
 3. Cloud access only through OIDC federation (Azure federated credentials / AWS IAM role). No long-lived cloud keys in secrets.
 4. Never use pull_request_target with a checkout of PR code. Never interpolate untrusted input (titles, branch names, comments) directly into run: — pass via env.
-5. Required checks: secrets scan (gitleaks), SAST (bandit), dependency audit (pip-audit, npm audit), IaC scan, container scan, tests. All block merge. Free tooling only: no GitHub Advanced Security features (CodeQL, dependency review, secret scanning, artifact attestations) and no paid API keys.
+5. CI checks to run on every PR: secrets scan (gitleaks), SAST (bandit), dependency audit (pip-audit, npm audit), IaC scan, container scan, tests. Each fails its job. The factory never creates or changes rulesets or branch protection; the repo owner or the org decides which checks are required. Free tooling only: no GitHub Advanced Security features (CodeQL, dependency review, secret scanning, artifact attestations) and no paid API keys.
 6. Images: build once, scan, generate SBOM, sign with cosign keyless, deploy by digest.
 7. Production deploys run in a GitHub Environment with required reviewers and branch restrictions.
 8. Workflows set timeout-minutes and concurrency; caches never hold secrets.

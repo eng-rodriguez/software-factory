@@ -1,4 +1,4 @@
-# .github/workflows/pr-format.yml — make `pr-format` a required check.
+# .github/workflows/pr-format.yml — checks the PR title and sections.
 name: pr-format
 on:
   pull_request:
