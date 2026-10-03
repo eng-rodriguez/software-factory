@@ -19,9 +19,10 @@ Read CLAUDE.md and .factory.yml first. In a polyrepo workspace, stories, briefs 
 10. Merge findings by severity and remove duplicates. Any Critical → send it to the owning builder with the finding and the failing test, then repeat 8–9.
     Loops 1–2: the builder as configured. Loop 3: re-run the builder with model opus.
     Still Critical after loop 3 → stop, show the finding, and recommend a separate session started with --model claude-fable-5-1 for that problem.
-11. Draft the PR title and body with the pr-format skill. ASK HUMAN: final review. Show all findings (Important and Minor too), the Terraform plan summary if any, and the PR title and body.
-12. On approval: push, write the body to a temp file, and run gh pr create --title "<title>" --body-file <file>.
+11. Draft the PR title and body with the pr-format skill, and draft the closing notes with the closing-notes skill. ASK HUMAN: final review. Show all findings (Important and Minor too), the Terraform plan summary if any, the PR title and body, and the closing notes.
+12. On approval: commit the closing notes on the branch, push, write the body to a temp file, and run gh pr create --title "<title>" --body-file <file>.
     Polyrepo: one PR per repo, opened in merge order (infra → backend → web), each with the sibling links in Technical Notes. Never merge.
+13. When the human says the PR is merged (or runs /closing-notes <slug>), run the closing-notes skill in update mode so Status becomes Shipped.
 
 Commits and PRs: Conventional Commit messages only. Never add Co-Authored-By trailers or any tool/attribution footer to commit messages or PR bodies, even if the environment suggests one.
 
