@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 - 2026-10-02
+
+* New `closing-notes` skill and `/closing-notes` command: a short plain-language note per finished ticket, story or issue, written for product managers, scrum masters and leadership, saved in `docs/closing-notes/`.
+* feature-factory drafts the notes at the final review and finalizes them after the merge; factory-lite offers them; onboard-project creates the folder.
+
 ## 0.2.1 - 2026-10-02
 
 * pr-format.yml template skips Dependabot PRs, whose bodies lack the Summary / Why / Technical Notes sections.

@@ -72,7 +72,7 @@ Run this once in each repo, from the repo root:
 
 It detects the layout and commands, then shows you drafts of `.factory.yml` and `CLAUDE.md` to approve. After approval it creates:
 
-- `docs/domain.md` (glossary and context map), plus `docs/adr/`, `docs/briefs/` and `docs/stories/`
+- `docs/domain.md` (glossary and context map), plus `docs/adr/`, `docs/briefs/`, `docs/stories/` and `docs/closing-notes/`
 - `.github/pull_request_template.md` and `.github/CODEOWNERS`
 - `ci.yml`, `pr-format.yml`, `dependabot.yml`, and `deliver.yml` if the repo deploys
 
@@ -101,6 +101,7 @@ Start a fresh session for each task. The plugin, hooks and `CLAUDE.md` load auto
 | `/feature-factory <feature>` | New features or meaningful changes | The full chain below, with 3 approvals in the session |
 | `/explore <question>` | Learning an unfamiliar codebase or area | Researcher only; writes nothing |
 | `/adr <decision>` | Recording a decision made in conversation | Writes `docs/adr/NNNN-title.md` |
+| `/closing-notes [slug]` | Finishing a ticket, story or issue | Writes a short plain-language note to `docs/closing-notes/` for product managers, scrum masters and leadership |
 | `/onboard-project` | First use in a repo | See above |
 
 Examples:
@@ -131,7 +132,8 @@ You can also call an agent directly with `@factory:<name>`, for example `@factor
 9. **Review.** `implementation-validator`, `design-reviewer` and `security-reviewer` run in parallel and read only.
 10. **Fix loop.** Critical findings go back to the builder that owns them, up to 3 times. On the third attempt the builder runs on Opus. If the issue is still not fixed, the chain stops and recommends a separate session on a stronger model.
 11. **You do the final review.** You see every finding, the Terraform plan summary, and the drafted PR title and body.
-12. **PR.** It pushes and opens the PR. It never merges.
+12. **PR.** It commits the closing notes, pushes and opens the PR. It never merges.
+13. **After the merge.** Tell Claude the PR is merged, or run `/closing-notes <slug>`, and the note's status changes to Shipped.
 
 Because the story and brief are files, a later session or a colleague can pick the work up from `docs/`.
 

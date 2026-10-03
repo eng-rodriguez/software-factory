@@ -43,6 +43,7 @@ brew install terraform-linters/tap/tflint
 /factory-lite <fix> researcher ➔ builder ➔ validator ➔ security review
 /explore <question> read-only exploration
 /adr <decision> record an architecture decision
+/closing-notes [slug] plain-language closing notes for PMs, scrum masters and leadership
 /onboard-project set up a repo for the factory
 ```
 
