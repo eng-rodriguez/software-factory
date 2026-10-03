@@ -78,9 +78,8 @@ It detects the layout and commands, then shows you drafts of `.factory.yml` and 
 
 It never restructures the repo or overwrites existing workflows. Everything lands as one PR for you to review.
 
-**After merging, configure GitHub.** The PR description lists these steps:
+**After merging, configure GitHub.** The PR description lists these optional steps. The factory never creates or changes rulesets or branch protection; those belong to the repo owner or your organization, and existing ones stay as they are. If your repo already requires checks, `ci-ok` is the one job that summarizes `ci.yml`.
 
-- [ ] Add a ruleset on `main`: require a PR, 1 approval and CODEOWNERS review, block force pushes, and require the `ci-ok` and `pr-format` checks.
 - [ ] Turn on Dependabot alerts and security updates (free).
 - [ ] Set default workflow permissions to read-only, and stop Actions from approving PRs.
 - [ ] Create environments `dev`, `staging` (main only) and `production` (main only, you as required reviewer).
@@ -179,7 +178,7 @@ areas:
 **Monorepo:**
 - Start one session at the root.
 - Each area can have its own `CLAUDE.md`; keep the root one under 100 lines.
-- Each feature becomes one PR. CI runs only the jobs for changed paths, and `ci-ok` is the only required check.
+- Each feature becomes one PR. CI runs only the jobs for changed paths, and `ci-ok` summarizes them in one job.
 
 **Multiple repos:**
 - Set `layout: polyrepo` in every repo.

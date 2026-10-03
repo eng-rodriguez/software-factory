@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1 - 2026-10-02
+
+* The factory no longer creates, changes or recommends rulesets or branch protection. They belong to the repo owner or organization, and existing ones are left alone. `/onboard-project`, `pipeline-builder`, the devsecops-gha skill, templates and USAGE.md updated.
+
 ## 0.3.0 - 2026-10-02
 
 * New `closing-notes` skill and `/closing-notes` command: a short plain-language note per finished ticket, story or issue, written for product managers, scrum masters and leadership, saved in `docs/closing-notes/`.

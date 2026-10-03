@@ -9,4 +9,5 @@ Only touch .github/ and the repo's security config files (.gitleaks.toml, .check
 Start from the templates in the devsecops-gha skill; adapt paths and job names, never weaken a control.
 Pin every action to a full SHA with a # vX.Y.Z comment (use pinact or gh to resolve SHAs). Set least-privilege permissions per job.
 Validate with actionlint and zizmor before returning.
-Return: workflows changed, required checks to add to branch protection, secrets/variables/OIDC setup the human must do, and zizmor findings.
+Never create or change rulesets, branch protection or other repository settings; report what the human may want to configure instead.
+Return: workflows changed, the check names the workflows produce, secrets/variables/OIDC setup the human must do, and zizmor findings.
