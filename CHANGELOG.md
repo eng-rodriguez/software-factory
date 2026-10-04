@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1 - 2026-10-04
+
+* Scope bug fixes to the approved feature or fix and regressions it introduces. Builders, test verification and reviewers use `change-scope` to separate unrelated findings and report uncertain blockers.
+* Full and lite workflows bound repair rounds across the entire run; unrelated findings never trigger repairs. Full-suite and scanner failures remain visible.
+* The quality gate directs agents to classify failures before fixing them, preserving all existing checks.
+
 ## 0.4.0 - 2026-10-02
 
 * Contract artifacts: the brief lists API collections (Postman or similar, only if the repo has one), OpenAPI schema, generated clients and API docs to update; `django-builder` updates them in place and `implementation-validator` checks them. `/onboard-project` detects and records them in CLAUDE.md.

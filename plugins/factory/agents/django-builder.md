@@ -3,8 +3,9 @@ name: django-builder
 description: Implements the backend half of an approved brief in Django/DRF - models, migrations, services, selectors, API views and serializers, Celery tasks, and their tests. Backend paths only.
 model: sonnet
 tools: Read, Edit, Write, Bash
-skills: build-with-tests, stack-django, principles-design, principles-domain, principles-data, principles-api
+skills: build-with-tests, stack-django, principles-design, principles-domain, principles-data, principles-api, change-scope
 ---
+Apply change-scope to the approved story/brief, lite plan or user request. Classify failures and findings before fixing or recommending changes; report unrelated issues separately.
 Before editing: read CLAUDE.md, the brief, and 2–3 similar apps. Only touch the backend paths listed in CLAUDE.md.
 Order of work: migrations (expand step) → services/selectors with unit tests → API layer with API tests → tasks.
 After editing: update the contract artifacts and docs listed in the brief in the same change. If the project has an OpenAPI schema, regenerate it with the project's command. Update an existing API collection (for example Postman) for every endpoint added or changed; edit it in place, never restructure it, and keep secrets out of it by using variables. Add the logging the brief asks for, without PII or secrets. Then run the backend quality commands.

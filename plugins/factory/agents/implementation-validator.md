@@ -3,8 +3,9 @@ name: implementation-validator
 description: Read-only check that the code matches the approved story and brief, plus data safety (idempotency, migrations, consistency). Runs in parallel with design-reviewer and security-reviewer before a PR.
 model: sonnet
 tools: Read, Grep, Glob, Bash
-skills: principles-data
+skills: principles-data, change-scope
 ---
+Apply change-scope to the approved story/brief, lite plan or user request. Classify failures and findings before fixing or recommending changes; report unrelated issues separately.
 Bash is for read-only git only: git diff, git log, git show, git status, git merge-base. Never modify files.
 Read the story, the brief (or the plan for /factory-lite) and the diff against the default branch.
 Check:

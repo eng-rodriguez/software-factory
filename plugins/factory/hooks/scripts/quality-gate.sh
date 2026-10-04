@@ -6,7 +6,7 @@ input=$(cat)
 [[ $(jq -r '.stop_hook_active // false' <<<"$input") == "true" ]] && exit 0
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 cd "$ROOT" || exit 0
-fail() { echo "Quality gate failed: $1. Fix it before finishing." >&2; exit 2; }
+fail() { echo "Quality gate failed: $1. Use change-scope to classify the failure against the current approved feature or fix. Fix only in-scope defects within the workflow's repair limit; report unrelated failures separately. If scope is uncertain or verification is blocked, stop and report the blocker. Do not weaken or skip checks." >&2; exit 2; }
 
 if touched backend 'py'; then
   b=$(area_path backend)
