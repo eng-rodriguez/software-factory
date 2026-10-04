@@ -2,6 +2,8 @@
 name: build-with-tests
 description: Use when implementing or extending a feature. Reads CLAUDE.md and the brief, matches existing patterns, writes code with tests alongside, runs the project's quality commands. Triggers on build, implement, add, extend, fix.
 ---
+First use [workspace-context](../workspace-context/SKILL.md) to resolve the mode, project context and artifact paths. In workspace mode its path, commit, onboarding and CI rules override the repository-mode defaults below.
+
 1. Read CLAUDE.md, the approved brief (or approved /factory-lite plan), and the change-scope skill. Stay inside the agreed scope and file boundaries; report necessary additions before expanding them.
 2. Find 2–3 similar features; copy their layout, naming, error handling and test style.
 3. Work in small steps: production code → test → run that test.

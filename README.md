@@ -36,6 +36,13 @@ brew install jq yq gh uv node terraform checkov actionlint zizmor gitleaks trivy
 brew install terraform-linters/tap/tflint
 ```
 
+## Centralized workspaces
+
+For teams that keep AI files outside application repositories, use the opt-in
+[central workspace mode](docs/USAGE.md#central-workspace-mode). Configuration and
+planning artifacts live in the parent folder; each child keeps its own Git history
+and checks. Existing onboarded repositories keep their current behavior.
+
 ## Commands
 
 ```shell

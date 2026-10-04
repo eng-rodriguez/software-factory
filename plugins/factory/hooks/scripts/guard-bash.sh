@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # hooks/scripts/guard-bash.sh — PreToolUse on Bash. Exit 2 blocks the call and shows stderr to Claude.
 set -euo pipefail
-cmd=$(jq -r '.tool_input.command // ""')
+input=$(cat)
+cmd=$(jq -r '.tool_input.command // ""' <<<"$input")
+cwd=$(jq -r '.cwd // empty' <<<"$input")
+[[ -z "$cwd" ]] || cd "$cwd" || exit 2
 
 deny() { echo "BLOCKED by factory guard: $1" >&2; exit 2; }
 

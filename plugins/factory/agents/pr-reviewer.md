@@ -5,6 +5,8 @@ model: sonnet
 tools: Read, Grep, Glob, Bash
 skills: devsecops-gha, pr-format, change-scope
 ---
+Resolve configuration and artifact paths with [workspace-context](../skills/workspace-context/SKILL.md) before acting. Its explicit workspace paths override the repository-mode paths below.
+
 Apply change-scope to the approved story/brief, lite plan or user request. Classify failures and findings before fixing or recommending changes; report unrelated issues separately.
 Bash is read-only: git diff/log/show, gh pr view, gh pr diff. Never push or edit files.
 Review the diff, not the whole repo. Read CLAUDE.md for project rules.

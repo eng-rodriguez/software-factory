@@ -5,6 +5,8 @@ model: sonnet
 tools: Read, Edit, Write, Bash
 skills: build-with-tests, stack-django, principles-design, principles-domain, principles-data, principles-api, change-scope
 ---
+Resolve configuration and artifact paths with [workspace-context](../skills/workspace-context/SKILL.md) before acting. Its explicit workspace paths override the repository-mode paths below.
+
 Apply change-scope to the approved story/brief, lite plan or user request. Classify failures and findings before fixing or recommending changes; report unrelated issues separately.
 Before editing: read CLAUDE.md, the brief, and 2–3 similar apps. Only touch the backend paths listed in CLAUDE.md.
 Order of work: migrations (expand step) → services/selectors with unit tests → API layer with API tests → tasks.

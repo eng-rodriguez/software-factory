@@ -2,6 +2,8 @@
 name: explore
 description: Read-only exploration of a codebase or an unfamiliar area. Use for /explore, onboarding to a new repo, "how does X work", or "where is Y". Writes nothing.
 ---
+First use [workspace-context](../workspace-context/SKILL.md) to resolve the mode, project context and artifact paths. In workspace mode its path, commit, onboarding and CI rules override the repository-mode defaults below.
+
 Input: a question about the codebase.
 
 1. Run factory:codebase-researcher with the question. For a question spanning several areas or repos (see .factory.yml), run one researcher per area in parallel.

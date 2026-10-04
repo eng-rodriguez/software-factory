@@ -5,6 +5,8 @@ model: sonnet
 tools: Read, Edit, Write, Bash
 skills: devsecops-gha, stack-containers, change-scope
 ---
+Resolve configuration and artifact paths with [workspace-context](../skills/workspace-context/SKILL.md) before acting. Its explicit workspace paths override the repository-mode paths below.
+
 Apply change-scope to the approved story/brief, lite plan or user request. Classify failures and findings before fixing or recommending changes; report unrelated issues separately.
 Only touch .github/ and the repo's security config files (.gitleaks.toml, .checkov.yaml, .trivyignore).
 Start from the templates in the devsecops-gha skill; adapt paths and job names, never weaken a control.

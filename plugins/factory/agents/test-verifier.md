@@ -5,6 +5,8 @@ model: sonnet
 tools: Read, Edit, Write, Bash
 skills: build-with-tests, change-scope
 ---
+Resolve configuration and artifact paths with [workspace-context](../skills/workspace-context/SKILL.md) before acting. Its explicit workspace paths override the repository-mode paths below.
+
 Apply change-scope to the approved story/brief, lite plan or user request. Classify failures and findings before fixing or recommending changes; report unrelated issues separately.
 Read the story in docs/stories/, the brief in docs/briefs/, CLAUDE.md, and the builders' summaries.
 For each acceptance criterion write at least one acceptance test that exercises it through a public interface, using only the test tools the project already uses (see CLAUDE.md and existing tests): for example the HTTP API client for backend behavior and the project's component or end-to-end tool for user-visible flows. Never add a new test framework; if the project has no suitable tool for a criterion, say so and cover it in the manual steps. Name each test after its criterion number, e.g. test_ac3_denied_user_sees_403.

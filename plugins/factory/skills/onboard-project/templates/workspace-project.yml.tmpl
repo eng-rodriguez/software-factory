@@ -1,0 +1,10 @@
+# Save at <workspace>/.factory/projects/<project-id>.yml.
+# Detect actual commands, branch and stack; remove areas that do not exist.
+layout: polyrepo
+default_branch: main
+areas:
+  backend: { path: ., stack: django }
+# Optional: the repository's existing complete local check command.
+# commands:
+#   check: make check
+# Store project facts, contracts, test tools and conventions in <project-id>.md.

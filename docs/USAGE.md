@@ -9,6 +9,7 @@ This plugin turns a Claude Code session into a fixed delivery chain: research â†
 - [The full feature chain](#the-full-feature-chain)
 - [Guardrails](#guardrails)
 - [Monorepos and multiple repos](#monorepos-and-multiple-repos)
+- [Central workspace mode](#central-workspace-mode)
 - [Choosing models](#choosing-models)
 - [Keeping it sharp](#keeping-it-sharp)
 - [Verify your setup](#verify-your-setup)
@@ -192,6 +193,88 @@ areas:
 - The backend publishes a versioned API schema, and the frontend generates its client from that published version.
 
 Without `.factory.yml`, the hooks fall back to common defaults (`manage.py` or `backend/`, plus `web/`, `infra/` and `deploy/`).
+
+## Central workspace mode
+
+Use this opt-in mode when AI instructions and planning artifacts must stay outside application repositories. Existing installations remain in repository mode; updating the plugin does not create a workspace manifest or migrate any project.
+
+```text
+repo/                         # Open this folder in VS Code; start the CLI here
+  .github/copilot-instructions.md
+  .factory/
+    workspace.yml
+    projects/
+      stratium-api.yml
+      stratium-api.md          # Project instructions, commands, contract paths
+      stratium-frontend.yml
+      stratium-iac.yml
+      stratium-gitops.yml
+    stories/
+    briefs/
+    adr/
+    reviews/
+    closing-notes/
+  software-factory/           # Optional local plugin source
+  stratium-api/               # Independent Git repositories
+  stratium-frontend/
+  stratium-iac/
+  stratium-gitops/
+```
+
+Only explicitly listed repositories use workspace mode. The parent folder does not need to be a Git repository. Keep project paths as direct child directory names; nested layouts and symlinked projects/configuration are not supported.
+
+To onboard, install the plugin in your client, open/start at `repo/`, then ask:
+
+```text
+/onboard-project Set up centralized workspace mode for stratium-api,
+stratium-frontend, stratium-iac and stratium-gitops. All AI configuration,
+instructions and planning artifacts must live in this parent folder.
+Inspect the repositories read-only and show the parent configuration drafts.
+Preserve existing CI and the GitOps release process.
+```
+
+This branch of onboarding creates only parent files after draft approval. It does not run the repository onboarding steps that create branches, workflows, CODEOWNERS, docs or PRs. Do not onboard from a child directory if your intent is to create parent workspace mode.
+
+The manifest at `.factory/workspace.yml` is:
+
+```yaml
+version: 1
+mode: workspace
+projects:
+  stratium-api: { path: stratium-api }
+  stratium-frontend: { path: stratium-frontend }
+  stratium-iac: { path: stratium-iac }
+  stratium-gitops: { path: stratium-gitops }
+```
+
+Each listed project must have `.factory/projects/<id>.yml`. For example, for a Django API with an existing `make check` target:
+
+```yaml
+layout: polyrepo
+default_branch: main
+areas:
+  backend: { path: ., stack: django }
+commands:
+  check: make check
+```
+
+Use actual project commands and branches. `commands.check` is optional trusted shell configuration: it runs from that project's Git root when the project has changes. It replaces the default stack checks, so it must cover the project's full local lint/type/test requirements. The hook still runs its workflow linters for changed GitHub Actions files. Without it, existing area-based checks apply. GitOps projects should record their existing Helm/Kustomize validation command because there is no generic GitOps check in the default gate.
+
+Store other project facts in `.factory/projects/<id>.md`. Parent Copilot instructions should identify the manifest, require the workspace-context skill, prohibit AI files in children, and require each Git/check command to run in the owning repository. Agent/model definitions remain in the shared plugin or parent `.github/agents`; no project-specific copies are needed. Use model identifiers supported by your Copilot client; this feature does not translate model aliases or tool definitions between clients.
+
+For a cross-repository feature, invoke `/feature-factory` from the parent and name the affected projects. The factory passes absolute project and artifact paths to agents, records a baseline per repository, and creates one branch/PR per changed repository. Stories, briefs, ADRs, closing notes and written review reports stay in `.factory/` and are not committed to application repositories. Normal application code, tests, API contracts and user-facing documentation still belong in their repositories. Merge order follows actual dependencies, including GitOps reconciliation.
+
+The Stop hook checks every registered repository when the session directory is the workspace root. From a registered child, it checks that child only. Unlisted repositories retain repository-mode configuration. Parent sessions do not automatically check unlisted repositories. Hook commands honor the runtime's `cwd`; verify your client actually loads the hooks and supplies compatible payloads before relying on them. The guards remain pattern-based and do not provide a filesystem sandbox.
+
+**Existing installations:** a listed child containing `.factory.yml` is a configuration conflict, not an implicit migration. Leave it out of the manifest to retain its existing behavior. Migration requires a separate explicit request to move its AI context/artifacts and review any pipeline dependencies; onboarding never deletes those files for you.
+
+**CI and sharing:** local external briefs are unavailable on GitHub runners. Scope review runs locally against each repository's section of the brief; preserve existing CI checks and never claim CI validated the external brief. If an existing required check needs an in-repository brief, report the policy conflict instead of disabling it. PRs use shared ticket/document links when available; otherwise identify the brief as local and summarize decisions/manual verification without broken local links. Do not automatically publish external artifacts. Teammates need their own central configuration or an approved shared distribution of it.
+
+Developer verification (requires Git, Bash, jq and yq v4):
+
+```shell
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
+```
 
 ## Choosing models
 

@@ -5,6 +5,8 @@ model: opus
 tools: Read, Grep, Glob, Bash
 skills: devsecops-gha, stack-containers, change-scope
 ---
+Resolve configuration and artifact paths with [workspace-context](../skills/workspace-context/SKILL.md) before acting. Its explicit workspace paths override the repository-mode paths below.
+
 Apply change-scope to the approved story/brief, lite plan or user request. Classify failures and findings before fixing or recommending changes; report unrelated issues separately.
 Bash is for read-only scanners only: gitleaks detect, bandit, semgrep, checkov, trivy fs/config, zizmor, actionlint, npm audit, pip-audit. Never modify files.
 Read the approved scope and supplied diff before reviewing. If no diff is supplied, request it rather than treating repository-wide scanner output as change findings. Classify scanner results using change-scope, retaining unrelated vulnerabilities in the deferred list with their severity.

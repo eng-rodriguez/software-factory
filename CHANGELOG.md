@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0 - 2026-10-04
+
+* Add opt-in parent workspace mode: external project configuration and AI artifacts, with repository mode preserved for existing and unlisted projects.
+* Resolve external configuration in quality hooks and check all registered repositories when a session runs at the workspace root. Reject conflicting local configuration rather than silently migrating it.
+* Teach agents and workflows to keep AI artifacts outside child repositories, run checks per Git root, preserve existing CI and GitOps delivery, and avoid local-only links in PRs.
+
 ## 0.4.1 - 2026-10-04
 
 * Scope bug fixes to the approved feature or fix and regressions it introduces. Builders, test verification and reviewers use `change-scope` to separate unrelated findings and report uncertain blockers.

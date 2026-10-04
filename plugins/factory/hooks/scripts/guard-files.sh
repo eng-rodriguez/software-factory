@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # hooks/scripts/guard-files.sh — PreToolUse on Edit|Write|MultiEdit.
 set -euo pipefail
-f=$(jq -r '.tool_input.file_path // ""')
+input=$(cat)
+f=$(jq -r '.tool_input.file_path // ""' <<<"$input")
+cwd=$(jq -r '.cwd // empty' <<<"$input")
+[[ -z "$cwd" ]] || cd "$cwd" || exit 2
+[[ "$f" == /* || -z "$f" ]] || f="$PWD/$f"
 deny() { echo "BLOCKED by factory guard: $1" >&2; exit 2; }
 
 case "$f" in
@@ -11,8 +15,8 @@ esac
 
 # Migrations already on main are immutable
 if [[ "$f" == */migrations/*.py ]]; then
-  top=$(git rev-parse --show-toplevel 2>/dev/null || true)
-  if [[ -n "$top" ]] && git cat-file -e "origin/main:${f#"$top"/}" 2>/dev/null; then
+  top=$(git -C "$(dirname "$f")" rev-parse --show-toplevel 2>/dev/null || true)
+  if [[ -n "$top" ]] && git -C "$top" cat-file -e "origin/main:${f#"$top"/}" 2>/dev/null; then
     deny "migration already merged; create a new one"
   fi
 fi

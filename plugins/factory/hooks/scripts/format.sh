@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # hooks/scripts/format.sh — PostToolUse on Edit|Write|MultiEdit. Never blocks.
-f=$(jq -r '.tool_input.file_path // empty')
+input=$(cat)
+f=$(jq -r '.tool_input.file_path // empty' <<<"$input")
+cwd=$(jq -r '.cwd // empty' <<<"$input")
+[[ -z "$cwd" ]] || cd "$cwd" || exit 0
+[[ "$f" == /* || -z "$f" ]] || f="$PWD/$f"
 [[ -z "$f" || ! -f "$f" ]] && exit 0
 case "$f" in
   *.py)

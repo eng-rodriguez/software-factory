@@ -2,6 +2,8 @@
 name: devsecops-gha
 description: Rules for GitHub Actions pipelines and supply-chain security. Use when creating or editing anything in .github/, Dockerfiles, deploy steps, or when reviewing a PR for security.
 ---
+First use [workspace-context](../workspace-context/SKILL.md) to resolve the mode, project context and artifact paths. In workspace mode its path, commit, onboarding and CI rules override the repository-mode defaults below.
+
 ## Pipeline rules
 1. Every third-party action is pinned to a full commit SHA with a version comment. Never a tag or branch.
 2. Top-level `permissions: contents: read`; jobs request only what they need (id-token: write for OIDC, security-events: write for SARIF).

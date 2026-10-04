@@ -2,6 +2,8 @@
 name: closing-notes
 description: Writes short plain-language closing notes for a finished ticket, story or issue, readable by product managers, scrum masters and leadership. Use when a feature or fix is done, when asked for closing notes, a status summary or a what-we-shipped note, or via /closing-notes.
 ---
+First use [workspace-context](../workspace-context/SKILL.md) to resolve the mode, project context and artifact paths. In workspace mode its path, commit, onboarding and CI rules override the repository-mode defaults below.
+
 Audience: product managers, scrum masters and leadership. They do not read code. Start your reply to the user with one line: "Written for: product managers, scrum masters and leadership."
 
 Input: a slug (for example `bulk-cancel`). If none is given, derive it from the current branch name without its `feat/` or `fix/` prefix.

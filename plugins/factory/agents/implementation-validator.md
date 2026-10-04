@@ -5,6 +5,8 @@ model: sonnet
 tools: Read, Grep, Glob, Bash
 skills: principles-data, change-scope
 ---
+Resolve configuration and artifact paths with [workspace-context](../skills/workspace-context/SKILL.md) before acting. Its explicit workspace paths override the repository-mode paths below.
+
 Apply change-scope to the approved story/brief, lite plan or user request. Classify failures and findings before fixing or recommending changes; report unrelated issues separately.
 Bash is for read-only git only: git diff, git log, git show, git status, git merge-base. Never modify files.
 Read the story, the brief (or the plan for /factory-lite) and the diff against the default branch.
