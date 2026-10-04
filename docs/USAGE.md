@@ -116,6 +116,8 @@ You can also call an agent directly with `@factory:<name>`, for example `@factor
 
 **For bugs**, `/factory-lite` writes a failing test before the fix. When it finishes, it shows a few manual "How to verify" steps and offers to open a PR.
 
+**Bug-fix scope.** Both workflows fix defects in the agreed feature or fix and regressions caused by its implementation. Existing unrelated bugs, even Critical ones or bugs in touched files, are reported separately and do not trigger repair loops. A pre-existing bug explicitly targeted by the task remains in scope. Uncertain failures or existing defects that block the work are reported for a scope decision. Required checks still run and their actual failures remain visible; the factory does not weaken checks to get green results. `/factory-lite` allows one repair round total.
+
 **Tickets from Jira, GitHub or Linear.** The factory has no tracker integration. Paste the ticket text after the command (`/feature-factory` followed by the pasted ticket). Its key and link carry through to the story, the PR's Why section and the closing notes. When the work is done, paste the closing notes back into the ticket.
 
 ## The full feature chain
@@ -131,7 +133,7 @@ You can also call an agent directly with `@factory:<name>`, for example `@factor
 7. **Build.** Only the builders for the touched layers run, one after another: django → react → ai → infra → pipeline. Each one commits its work.
 8. **Acceptance tests.** `test-verifier` writes at least one test for every acceptance criterion, using only the test tools the project already has. It also adds a **Manual verification** section to the brief: numbered, copy-pasteable steps with expected results.
 9. **Review.** `implementation-validator`, `design-reviewer` and `security-reviewer` run in parallel and read only.
-10. **Fix loop.** Critical findings go back to the builder that owns them, up to 3 times. On the third attempt the builder runs on Opus. If the issue is still not fixed, the chain stops and recommends a separate session on a stronger model.
+10. **Fix loop.** Only test failures and Critical findings within the approved scope, including regressions caused by the change, go back to the owning builder. The full run allows at most 3 repair rounds; new findings do not reset the count. On the third attempt the builder runs on Opus. If blockers remain, the chain stops and recommends a separate session on a stronger model.
 11. **You do the final review.** You see every finding, the Terraform plan summary, the drafted PR title and body, the closing notes, and the manual verification steps. For High-risk work you run those steps and confirm before the PR opens.
 12. **PR.** It commits the closing notes, pushes and opens the PR. It never merges.
 13. **After the merge.** Tell Claude the PR is merged, or run `/closing-notes <slug>`, and the note's status changes to Shipped. Copy the printed note into your tracker.
@@ -157,7 +159,7 @@ Hooks run on every tool call, inside all agents, and the model cannot override t
 | `guard-bash` | Before every shell command | Terraform apply/destroy/import/state, kubectl and Helm writes, prod kube contexts, Azure/AWS CLI writes, force pushes, pushes to main, commits of secret-looking files (plus gitleaks), `rm -rf /` |
 | `guard-files` | Before every file edit | `.env*`, keys, `*.tfvars`, `*.tfstate`, kubeconfig, `.terraform.lock.hcl`, and migrations already on main |
 | `format` | After every file edit | Formats the edited file with ruff, the project's own Prettier, or `terraform fmt` |
-| `quality-gate` | When Claude tries to finish | Lint, typecheck and fast tests for the areas the branch touched. If anything fails, Claude keeps working |
+| `quality-gate` | When Claude tries to finish | Lint, typecheck and fast tests for the areas the branch touched. Failures are classified by scope: repair in-scope defects within the workflow limit, report unrelated failures, and stop on uncertain blockers |
 
 **When a guard fires**, Claude sees `BLOCKED by factory guard: <reason>` and has to change approach. If the blocked action really is needed (for example a Terraform apply), it happens in CI with your approval, or you run it yourself outside Claude.
 
