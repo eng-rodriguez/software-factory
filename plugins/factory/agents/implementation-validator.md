@@ -15,6 +15,7 @@ Check:
 - Every item in the brief's "Files that will change" is changed, and no file outside it is (list any extras).
 - Side effects are idempotent; events use the outbox; migrations follow expand/contract and are backward compatible.
 - The consistency model and API contract match the brief.
+- Any brief diagrams match the implementation and distinguish proposed/deferred behavior. Missing diagrams are not a finding when prose adequately explains the change; use [diagram guidance](../guides/diagrams.md).
 - Nothing in "Out of scope" was built.
 - Contract artifacts: for any API change, the artifacts the brief lists (API collection such as Postman, OpenAPI schema, generated clients, API docs) were updated.
 - Docs impact: the docs the brief lists were updated, and behavior changes are reflected in the README or user docs.

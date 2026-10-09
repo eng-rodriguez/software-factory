@@ -3,6 +3,8 @@ name: factory-lite
 description: Lightweight chain for bug fixes and small changes. Use for fix, tweak, small change, or when the user says "lite".
 ---
 First use [workspace-context](../workspace-context/SKILL.md) to resolve the mode, project context and artifact paths. In workspace mode its path, commit, onboarding and CI rules override the repository-mode defaults below.
+Follow the shared [author identity and writing voice](../../guides/authorship.md) rules for all written artifacts, commits and PR publication.
+
 
 Use the change-scope skill throughout. Pass the approved plan and pre-implementation commit to the builder and reviewers.
 

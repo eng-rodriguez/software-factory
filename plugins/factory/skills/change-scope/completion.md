@@ -24,6 +24,8 @@ High risk requires explicit manual verification results before publication, plus
 
 Record location, evidence, scope and impact for each finding. For deferred vulnerabilities also record an owner/follow-up, or plainly say that ownership is unresolved. Do not open tickets or contact owners automatically.
 
+Follow [author identity and writing voice](../../guides/authorship.md) when drafting artifacts and before committing or publishing.
+
 ## Verification and handoff
 
 For each required command report repository, revision (including whether the working tree is dirty), command, exit code and status: **passed**, **failed**, **skipped** or **blocked**. Include the test count from the test runner; use “unknown” when unavailable. Zero tests is skipped verification, not evidence that behavior works. An intentional test-free project can explicitly configure `checks.allow_no_tests: true`; list the manual evidence and remaining gap.

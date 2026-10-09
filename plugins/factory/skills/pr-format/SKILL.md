@@ -3,6 +3,8 @@ name: pr-format
 description: The single pull request format for every repo - Conventional Commit title plus Summary, Why and Technical Notes. Use whenever drafting a PR title or body, or reviewing one.
 ---
 First use [workspace-context](../workspace-context/SKILL.md) to resolve the mode, project context and artifact paths. In workspace mode its path, commit, onboarding and CI rules override the repository-mode defaults below.
+Follow the shared [author identity and writing voice](../../guides/authorship.md) rules for all written artifacts, commits and PR publication.
+
 
 ## Title
 One line, `type(scope): imperative summary`, at most 72 characters.

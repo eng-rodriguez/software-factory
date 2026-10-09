@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1 - 2026-10-09
+
+* Use the user's established Git author/committer and authenticated PR identity, with one-line Conventional Commits and no assistant/tool attribution. Verify identity before publication without inventing emails or silently changing Git configuration; disable Claude attribution in the distributed settings.
+* Add selective Mermaid guidance for technical briefs and closing notes: choose diagrams by the explanation needed, keep notes audience-appropriate, verify against implemented behavior, and respect destination renderer support. Diagrams are optional when prose is sufficient.
+
 ## 0.6.0 - 2026-10-08
 
 * Add factory CI and one local verification command for behavioral tests, distribution metadata/references, shell checks and workflow lint/security checks.

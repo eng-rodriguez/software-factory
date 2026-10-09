@@ -3,6 +3,8 @@ name: feature-factory
 description: Runs the full feature chain with human approvals. Use when asked to build, ship, or implement a feature end to end, or "run the factory".
 ---
 First use [workspace-context](../workspace-context/SKILL.md) to resolve the mode, project context and artifact paths. In workspace mode its path, commit, onboarding and CI rules override the repository-mode defaults below.
+Follow the shared [author identity and writing voice](../../guides/authorship.md) rules for all written artifacts, commits and PR publication.
+
 
 Input: a one-sentence feature request, or a ticket pasted from any tracker (Jira, GitHub, Linear). For a pasted ticket, keep its key and link; never call the tracker's API. Derive a <slug> (kebab-case, at most 40 characters, prefixed with the lowercase ticket key when there is one, e.g. proj-123-bulk-cancel) and show it.
 Read CLAUDE.md and .factory.yml first. In a polyrepo workspace, stories, briefs and ADRs live in the home repo.

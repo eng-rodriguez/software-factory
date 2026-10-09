@@ -3,6 +3,8 @@ name: onboard-project
 description: Sets up an existing repo for the software factory - detects layout and commands, writes .factory.yml and CLAUDE.md (or AGENTS.md), docs skeleton, PR template, CODEOWNERS and the devsecops workflows, then opens one PR. Use the first time the factory touches a repo, or for /onboard-project.
 ---
 First use [workspace-context](../workspace-context/SKILL.md) to resolve the mode, project context and artifact paths. In workspace mode its path, commit, onboarding and CI rules override the repository-mode defaults below.
+Follow the shared [author identity and writing voice](../../guides/authorship.md) rules for all written artifacts, commits and PR publication.
+
 
 For a request to enable centralized workspace mode, use [workspace.yml.tmpl](templates/workspace.yml.tmpl) and [workspace-project.yml.tmpl](templates/workspace-project.yml.tmpl). Inspect the explicitly selected child repositories and draft the parent files even if no manifest exists yet. Apply workspace-context's workspace onboarding branch; the numbered repository-mode procedure below does not run. Stop on existing child `.factory.yml` conflicts and request a migration decision without modifying those repositories.
 

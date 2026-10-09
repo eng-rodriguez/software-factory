@@ -25,9 +25,11 @@ This plugin turns a Claude Code session into a fixed delivery chain: research â†
 
 The plugin is the same everywhere. Everything specific to one project lives in that project.
 
-## No attribution lines
+## Author identity and attribution
 
-The factory's skills forbid `Co-Authored-By` trailers in commits and "Generated with Claude Code" footers in PRs. Claude Code can still add them by default, so also set this in `~/.claude/settings.json` (or a repo's `.claude/settings.json`):
+The factory writes commits, PRs and documentation in your or your team's engineering voice. Before committing it verifies both Git author and committer against your established project identity; before creating a PR it checks the authenticated account. Missing or conflicting identity is resolved before publication, without guessing an email or silently changing global settings. A privacy/noreply address you selected remains your identity. Commit messages use a single Conventional Commit line.
+
+The factory's skills forbid `Co-Authored-By` trailers in commits and "Generated with Claude Code" footers in PRs. The distributed settings disable them; when merging settings, retain this in `~/.claude/settings.json` (or a repo's `.claude/settings.json`):
 
 ```json
 "attribution": { "commit": "", "pr": "" }
@@ -351,3 +353,9 @@ Compatibility must be verified per client and version; it is not established by 
 - **Your organization blocks plugin marketplaces.** Copy the agents, skills and hooks into the work repo's `.github/`.
 
 If your company already has review bots or release pipelines, the factory should feed into them. Don't run a parallel Claude review in CI unless it's approved.
+
+## Diagrams in briefs and closing notes
+
+Include Mermaid diagrams when they help explain the implementation or delivered outcome. Select flowcharts, swimlanes, sequence, class, state, entity relationship or user journey diagrams according to the question being answered; a simple change may need none. Briefs use technical views beside the relevant design section. Closing notes use small, plain-language views of the actual delivered behavior, with captions for readers whose tracker cannot render Mermaid.
+
+The shared [diagram guide](../plugins/factory/guides/diagrams.md) links to official syntax, explains renderer compatibility (including swimlanes), and requires consistency with the implementation. Closing notes retain their 250-word prose limit, excluding Mermaid syntax.

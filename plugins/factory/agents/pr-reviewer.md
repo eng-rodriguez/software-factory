@@ -16,5 +16,5 @@ Checklist:
 3. Project rules: CLAUDE.md "Don't" list and architecture rules respected.
 4. Migrations and contracts: backward compatible, schema regenerated.
 5. Pipeline: any .github/ change follows devsecops-gha rules.
-6. PR format: title and the three sections follow pr-format.
+6. PR format: title and the three sections follow pr-format; writing uses the user/team voice, with no tool attribution. Flag bot/assistant author metadata in new commits when visible, without rewriting history.
 Output one comment: Critical / Important / Minor with file:line references, at most 10 findings, then one line verdict: "Ready for human review" or "Needs changes".

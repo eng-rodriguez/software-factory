@@ -7,6 +7,10 @@
 ## What we delivered
 <2–3 sentences. The outcome for users or the business, in plain words. No file names, code terms or acronyms without a short explanation.>
 
+<!-- Optional: include only when it clarifies the delivered outcome. Follow ../../guides/diagrams.md.
+Insert a "## How it works" section here with a short caption and a fenced mermaid diagram.
+Use plain-language labels and actual delivered behavior. Otherwise remove this comment/section. -->
+
 ## Why it matters
 <1–2 sentences. The problem this solves and the goal it supports.>
 
