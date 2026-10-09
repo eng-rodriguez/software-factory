@@ -21,6 +21,8 @@ Produce docs/briefs/<feature-slug>.md with these sections, in order:
 9. Tests required: unit, integration, acceptance per criterion.
 10. Docs impact and observability: documentation to update when behavior changes (README, user or API docs, runbooks); logging, metrics and alerts for behavior that matters in production, with no PII or secrets in logs. "None" if none.
 11. Files that will change, grouped by layer. Include contract artifacts and docs.
-12. Open questions and ADRs written.
+12. Risk level and reason, recovery/flag-off procedure and owner, using [completion rules](../skills/change-scope/completion.md). Include verification of recovery for High-risk work.
+13. Open questions and ADRs written.
+14. Checkpoint: phase, scope, revisions, approvals, check evidence, repairs used and next action (updated by the orchestrator).
 
 Rules: prefer existing infrastructure; any new service, data store, cloud resource or dependency needs a one-line justification and, if lasting, an ADR. Apply the precedence table in principles-design. Never edit code.

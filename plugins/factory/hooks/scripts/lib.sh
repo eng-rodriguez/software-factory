@@ -7,14 +7,15 @@ factory_context() {
   ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd -P)
   CFG="$ROOT/.factory.yml"
   FACTORY_MODE=repository
-  WORKSPACE_ROOT=""
+  # Public context consumed by callers that source this library.
+  export WORKSPACE_ROOT=""
   WORKSPACE_PROJECTS=""
   local dir manifest data id rel repo cfg rows
   dir=$(pwd -P)
   while [[ "$dir" != / && ! -f "$dir/.factory/workspace.yml" ]]; do dir=$(dirname "$dir"); done
   manifest="$dir/.factory/workspace.yml"
   [[ -f "$manifest" ]] || return 0
-  command -v yq >/dev/null && command -v jq >/dev/null || { factory_error "workspace mode requires yq v4 and jq"; return 2; }
+  if ! command -v yq >/dev/null || ! command -v jq >/dev/null; then factory_error "workspace mode requires yq v4 and jq"; return 2; fi
   data=$(yq -o=json '.' "$manifest") || { factory_error "cannot parse $manifest"; return 2; }
   jq -e '(.version == 1) and (.mode == "workspace") and (.projects | type == "object" and length > 0) and
     ([.projects[].path] | length == (unique | length)) and
@@ -48,6 +49,10 @@ factory_context() {
   if [[ "$FACTORY_MODE" == workspace ]]; then WORKSPACE_ROOT="$dir"; else WORKSPACE_PROJECTS=""; fi
 }
 factory_context || return 2
+if [[ -f "$CFG" ]]; then
+  command -v yq >/dev/null || { factory_error "configuration requires yq v4"; return 2; }
+  yq -e 'tag == "!!map"' "$CFG" >/dev/null || { factory_error "invalid project config: $CFG"; return 2; }
+fi
 
 has_cfg() { [[ -f "$CFG" ]] && command -v yq >/dev/null; }
 
@@ -68,11 +73,19 @@ changed_files() {
   { [[ -n "$base" ]] && git diff --name-only "$base"; git diff --name-only --cached; git ls-files --others --exclude-standard; } 2>/dev/null | sort -u
 }
 
-# touched <area> <extension-regex> → true if a changed file under the area matches
+# Any change in an area may affect its build/tests, including lockfiles and config.
+# Compare paths literally; a directory name is not a regular expression.
 touched() {
-  local p prefix; p=$(area_path "$1"); [[ -z "$p" ]] && return 1
-  if [[ "$p" == "." ]]; then prefix=""; else prefix="$p/"; fi
-  changed_files | grep -Eq "^${prefix}.*\.($2)$"
+  local p file
+  p=$(area_path "$1"); [[ -z "$p" ]] && return 1
+  while IFS= read -r file; do
+    [[ "$p" == "." || "$file" == "$p/"* ]] && return 0
+    case "$1:$file" in
+      backend:pyproject.toml|backend:uv.lock|backend:requirements*.txt|backend:pytest.ini|backend:setup.cfg|backend:tox.ini|backend:.python-version) return 0 ;;
+      web:package.json|web:package-lock.json|web:tsconfig*.json|web:vitest.config.*|web:vite.config.*) return 0 ;;
+    esac
+  done < <(changed_files)
+  return 1
 }
 
 # py <cmd…> → run through uv when the project uses it

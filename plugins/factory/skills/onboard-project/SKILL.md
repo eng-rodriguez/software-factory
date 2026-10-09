@@ -15,6 +15,7 @@ Templates are in [templates/](templates/). Never restructure the repo; record th
    - API contract artifacts: an API collection (a `postman/` folder or `*.postman_collection.json`), an OpenAPI schema, a generated client. Record their paths in CLAUDE.md; "none" if absent. Never restructure an existing collection.
    - Test tools already in use (pytest, Vitest, Playwright, ...), recorded in CLAUDE.md.
    - Existing CLAUDE.md / AGENTS.md, .github/workflows, CODEOWNERS, docs/.
+   - Delivery owner and triggers, existing CI checks, GitOps/release mechanism, and recovery runbook. Map which existing workflow covers each required check before proposing additions.
    - Default branch: `git symbolic-ref refs/remotes/origin/HEAD`.
    - Work or personal: ask the human if unclear. For work repos write AGENTS.md as the canonical file and CLAUDE.md containing only `@AGENTS.md`.
 2. Draft `.factory.yml` from templates/factory.yml.tmpl and `CLAUDE.md` from templates/CLAUDE.md.tmpl, filled only with detected facts; mark unknowns `<TODO>`. Keep CLAUDE.md under 150 lines.
@@ -22,7 +23,7 @@ Templates are in [templates/](templates/). Never restructure the repo; record th
 4. Create branch `chore/onboard-factory`.
 5. Create the docs skeleton if missing: docs/domain.md (templates/domain.md.tmpl), docs/adr/, docs/briefs/, docs/stories/, docs/closing-notes/ (add .gitkeep to empty folders).
 6. Copy templates/pull_request_template.md to .github/pull_request_template.md and templates/CODEOWNERS.tmpl to .github/CODEOWNERS with real paths and owner. Copy templates/smoke.sh to scripts/smoke.sh if the repo deploys a service.
-7. factory:pipeline-builder: add ci.yml, deliver.yml (only if it deploys), pr-format.yml and dependabot.yml from the devsecops-gha templates. Never modify or delete existing workflows; if a name collides, report it and use a factory- prefix.
+7. factory:pipeline-builder: reuse existing CI and delivery ownership. Propose only missing checks; do not install a second workflow that deploys to an environment already managed by CI or GitOps. A different filename does not avoid duplicate deployment triggers. Preserve existing workflows unless the user explicitly authorizes a targeted integration change. Add deliver.yml only when no equivalent delivery exists and the approved onboarding scope includes deployment setup. When adding it, copy terraform-plan.sh to scripts/factory-terraform-plan.sh and adapt deployment.md into the existing operations docs; report all environment/identity prerequisites. Copy missing ci/pr-format/dependabot templates only after checking semantic overlap, not just filenames. Validate the resulting workflows with actionlint and zizmor; the distributed actions are already pinned.
 8. Commit in small Conventional Commits (chore(factory): ..., ci: ...). No Co-Authored-By trailers or tool footers.
 9. Draft the PR with the pr-format skill. Technical Notes must list the GitHub settings the human may want to configure: Dependabot alerts, Actions policy, environments, OIDC identity variables. Never list paid features (Advanced Security, hosted AI review) as required. Never create, change or recommend replacing rulesets or branch protection; existing ones belong to the repo owner or the organization, especially in work repos.
 10. ASK HUMAN: open the PR? On yes, push and run gh pr create --body-file. Never merge.

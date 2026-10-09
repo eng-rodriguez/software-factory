@@ -9,14 +9,22 @@ cwd=$(jq -r '.cwd // empty' <<<"$input")
 deny() { echo "BLOCKED by factory guard: $1" >&2; exit 2; }
 
 case "$f" in
-  *.env|*.env.*|*.pem|*.key|*.tfvars|*.tfstate*|*kubeconfig*) deny "secret or state file: $f" ;;
+  *.env|*.env.*|*.pem|*.key|*.pfx|*.p12|*.tfvars|*.tfstate*|*kubeconfig*) deny "secret or state file: $f" ;;
   *.terraform.lock.hcl) deny "lock file changes come from terraform init" ;;
 esac
 
-# Migrations already on main are immutable
+# Resolve the owning repository, not the session or plugin directory.
 if [[ "$f" == */migrations/*.py ]]; then
-  top=$(git -C "$(dirname "$f")" rev-parse --show-toplevel 2>/dev/null || true)
-  if [[ -n "$top" ]] && git -C "$top" cat-file -e "origin/main:${f#"$top"/}" 2>/dev/null; then
+  [[ ! -L "$f" ]] || deny "cannot verify a symlinked migration"
+  dir=$(cd "$(dirname "$f")" 2>/dev/null && pwd -P) || deny "cannot resolve migration directory"
+  f="$dir/$(basename "$f")"
+  top=$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null) || deny "cannot resolve migration repository"
+  hook_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+  cd "$top" || exit 2
+  source "$hook_dir/lib.sh" || exit 2
+  branch=$(default_branch) || deny "cannot resolve default branch"
+  git rev-parse --verify "refs/remotes/origin/$branch^{commit}" >/dev/null 2>&1 || deny "cannot verify migration: origin/$branch is unavailable; fetch the base branch"
+  if git cat-file -e "origin/$branch:${f#"$top"/}" 2>/dev/null; then
     deny "migration already merged; create a new one"
   fi
 fi

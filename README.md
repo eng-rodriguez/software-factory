@@ -56,11 +56,15 @@ and checks. Existing onboarded repositories keep their current behavior.
 
 ## Changing the factory
 
-1. Edit the agent, skill or hook.
+1. Edit the agent, skill or hook. Run `bash scripts/check.sh` (requires Python 3, Git, Bash, jq, yq v4, ShellCheck, actionlint and zizmor). For prompt/model/workflow changes, run the relevant [scenario evaluations](evals/README.md) through each supported client and record actual outcomes.
 2. Bump "version" in `plugins/factory/.claude-plugin/plugin.json`.
 3. Add a CHANGELOG.md entry.
-4. Commit, tag vX.Y.Z, push. Run `/plugin marketplace update my-factory` where it is installed.
+4. Review the diff and verification evidence, then commit, tag vX.Y.Z, push. Run `/plugin marketplace update my-factory` where it is installed.
 
+
+Templates ship pinned actions. To check for upstream pin changes, run `python3 scripts/update-action-pins.py`. Review upstream releases and advisories before applying updates with `--write`, then run verification again. This covers template directories as well as factory CI; a moved tag alone is not evidence of safety.
+
+New delivery installations require the [deployment setup and recovery runbook](plugins/factory/skills/devsecops-gha/templates/deployment.md). Existing CI/GitOps delivery remains owned by the project. Updating this plugin does not upgrade already-copied workflows or configure cloud/GitHub environments.
 
 ## Local development
 

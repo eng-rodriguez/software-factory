@@ -1,4 +1,4 @@
-# ci.yml — pull request gates. Free tooling only: no GitHub Advanced Security features. Tags shown for readability: run `pinact run` to pin every action to a full SHA.
+# ci.yml — pull request gates. Free tooling only: no GitHub Advanced Security features. Actions are pinned; review updates in the factory before copying.
 # Adjust paths in the `changes` filters to match .factory.yml.  `ci-ok` is the single job to require if your repo uses required checks.
 name: ci
 on:
@@ -22,30 +22,32 @@ jobs:
       container: ${{ steps.filter.outputs.container }}
       workflows: ${{ steps.filter.outputs.workflows }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { persist-credentials: false }
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3
         id: filter
         with:
           filters: |
             backend: ['backend/**', 'apps/**', 'config/**', 'pyproject.toml', 'uv.lock', 'requirements*.txt']
             web: ['web/**']
             infra: ['infra/**']
-            container: ['Dockerfile*', 'deploy/**', 'backend/**', 'apps/**']
+            container: ['Dockerfile*', '.dockerignore', 'deploy/**', 'backend/**', 'apps/**', 'config/**', 'pyproject.toml', 'uv.lock', 'requirements*.txt', 'web/**']
             workflows: ['.github/**']
 
   secrets:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { fetch-depth: 0, persist-credentials: false }
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with: { go-version: '1.24.2', cache: false }
       - name: gitleaks
         env:
-          GITLEAKS_VERSION: 8.21.2
+          GOSUMDB: sum.golang.org
         run: |
-          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar -xz gitleaks
-          ./gitleaks detect --no-banner --redact --log-opts="origin/${GITHUB_BASE_REF:-main}..HEAD"
+          go install github.com/zricethezav/gitleaks/v8@v8.21.2
+          gitleaks detect --no-banner --redact --log-opts="origin/${GITHUB_BASE_REF:-main}..HEAD"
 
   python:
     needs: changes
@@ -64,9 +66,9 @@ jobs:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/app
       DJANGO_SETTINGS_MODULE: config.settings
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { persist-credentials: false }
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
         with: { enable-cache: true }
       - run: uv sync --frozen
       - run: uv run ruff check .
@@ -84,9 +86,9 @@ jobs:
     timeout-minutes: 15
     defaults: { run: { working-directory: web } }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { persist-credentials: false }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with: { node-version: 20, cache: npm, cache-dependency-path: web/package-lock.json }
       - run: npm ci --ignore-scripts
       - run: npm audit --audit-level=high --omit=dev
@@ -100,13 +102,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { persist-credentials: false }
-      - uses: terraform-linters/setup-tflint@v4
+      - uses: terraform-linters/setup-tflint@90f302c255ef959cbfb4bd10581afecdb7ece3e6 # v4
       - run: tflint --init && tflint --chdir=infra --recursive
-      - uses: bridgecrewio/checkov-action@v12
+      - uses: bridgecrewio/checkov-action@c13aafd679d3814a25067d10fcaf98c4f7594931 # v12
         with: { directory: infra, framework: terraform, soft_fail: false, quiet: true }
-      - uses: aquasecurity/trivy-action@0.28.0
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with: { scan-type: config, scan-ref: infra, severity: "HIGH,CRITICAL", exit-code: "1" }
 
   tf-plan:
@@ -123,15 +125,15 @@ jobs:
       ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { persist-credentials: false }
       # AWS: replace with aws-actions/configure-aws-credentials@v4 { role-to-assume: vars.AWS_PLAN_ROLE_ARN, aws-region: vars.AWS_REGION }
-      - uses: azure/login@v2
+      - uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
         with:
           client-id: ${{ vars.AZURE_PLAN_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
         with: { terraform_wrapper: false }
       - run: terraform -chdir="$TF_DIR" init -input=false -lock=false
       - run: terraform -chdir="$TF_DIR" plan -input=false -lock=false -no-color -out=tf.plan
@@ -142,9 +144,10 @@ jobs:
         run: |
           {
             echo "### Terraform plan — \`$TF_DIR\`"
-            echo '<details><summary>Show plan</summary>'
+            echo '<details><summary>Action counts (not approval of a deployment plan)</summary>'
             echo; echo '```'
-            terraform -chdir="$TF_DIR" show -no-color tf.plan | tail -c 60000
+            # Counts only: plan values may contain secrets. Full plans stay in restricted planning systems.
+            terraform -chdir="$TF_DIR" show -json tf.plan | jq '[.resource_changes[]?.change.actions[]] | group_by(.) | map({action:.[0],count:length})'
             echo '```'; echo '</details>'
           } > plan.md
           gh pr comment "$PR" --body-file plan.md --edit-last || gh pr comment "$PR" --body-file plan.md
@@ -155,10 +158,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { persist-credentials: false }
       - run: docker build -t app:ci .
-      - uses: aquasecurity/trivy-action@0.28.0
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: app:ci
           severity: HIGH,CRITICAL
@@ -171,21 +174,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { persist-credentials: false }
-      - uses: astral-sh/setup-uv@v5
-      - run: uvx zizmor --min-severity medium --format plain .github/workflows
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+      - run: uvx zizmor==1.28.0 --min-severity medium --format plain .github/workflows
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with: { go-version: '1.24.2', cache: false }
       - name: actionlint
+        env:
+          GOSUMDB: sum.golang.org
         run: |
-          bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
-          ./actionlint -color
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+          actionlint -color
 
   scope:
     if: startsWith(github.head_ref, 'feat/') || startsWith(github.head_ref, 'fix/')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { fetch-depth: 0, persist-credentials: false }
       - name: Changed files must appear in the brief
         env:

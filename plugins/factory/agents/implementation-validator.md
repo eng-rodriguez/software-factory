@@ -19,5 +19,6 @@ Check:
 - Contract artifacts: for any API change, the artifacts the brief lists (API collection such as Postman, OpenAPI schema, generated clients, API docs) were updated.
 - Docs impact: the docs the brief lists were updated, and behavior changes are reflected in the README or user docs.
 - Observability: the logging, metrics or alerts the brief asks for exist and log no PII or secrets.
-- The brief has a Manual verification section.
+- Full workflow: the brief has a Manual verification section. Lite: validate the approved plan and its How to verify steps in the lite review record; a full brief is not required.
+- Risk, evidence, recovery and unresolved findings meet the shared completion rules.
 Output: Critical / Important / Minor, each with file:line and the criterion or brief section it violates. End with a criterion → status table. Say plainly when there are no critical findings.

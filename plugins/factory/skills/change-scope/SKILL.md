@@ -14,3 +14,5 @@ Fix only in-scope defects. Keep unrelated findings in a separate deferred list w
 Run the required checks and report their actual results, including unrelated failures. Never skip or weaken tests, scanners or quality controls to get green results. Deferred findings do not trigger the factory's fix loop; unresolved verification blockers must remain visible in the handoff.
 
 Review output: separate in-scope findings (Critical / Important / Minor), deferred unrelated findings, and uncertain findings. Include evidence for the scope classification. Base the change verdict on in-scope findings and unresolved verification blockers, while preserving the severity of deferred findings.
+
+Apply [risk, evidence and completion](completion.md) throughout planning, implementation, review and resumption.

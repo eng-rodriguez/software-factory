@@ -1,6 +1,6 @@
 # Using the software factory
 
-This plugin turns a Claude Code session into a fixed delivery chain: research → story → architecture brief → builders → acceptance tests → parallel reviewers → pull request. GitHub Actions then runs security gates and deploys. You approve at five points, and Claude never applies Terraform, touches production, or merges.
+This plugin turns a Claude Code session into a fixed delivery chain: research → story → architecture brief → builders → acceptance tests → parallel reviewers → pull request. GitHub Actions then runs security gates and deploys. You approve planning and publication decisions. Agents never apply Terraform, touch production, or merge; approved CI delivery has its own environment approvals.
 
 - [How it fits together](#how-it-fits-together)
 - [One-time setup](#one-time-setup)
@@ -75,19 +75,20 @@ It detects the layout and commands, then shows you drafts of `.factory.yml` and 
 
 - `docs/domain.md` (glossary and context map), plus `docs/adr/`, `docs/briefs/`, `docs/stories/` and `docs/closing-notes/`
 - `.github/pull_request_template.md` and `.github/CODEOWNERS`
-- `ci.yml`, `pr-format.yml`, `dependabot.yml`, and `deliver.yml` if the repo deploys
+- Missing CI/PR-format/dependency checks, reusing existing workflows where they already cover the need
+- `deliver.yml`, its saved-plan helper and recovery runbook only when no equivalent delivery exists and deployment setup is in the approved scope
 
 It never restructures the repo or overwrites existing workflows. Everything lands as one PR for you to review.
 
-**After merging, configure GitHub.** The PR description lists these optional steps. The factory never creates or changes rulesets or branch protection; those belong to the repo owner or your organization, and existing ones stay as they are. If your repo already requires checks, `ci-ok` is the one job that summarizes `ci.yml`.
+**Before enabling new delivery, configure GitHub.** The PR description lists setup requirements and optional repository preferences. Environment protection and identity restrictions are required for the delivery template, not optional. The factory never creates or changes rulesets or branch protection; those belong to the repo owner or your organization, and existing ones stay as they are. If your repo already requires checks, `ci-ok` is the one job that summarizes `ci.yml`.
 
 - [ ] Turn on Dependabot alerts and security updates (free).
 - [ ] Set default workflow permissions to read-only, and stop Actions from approving PRs.
-- [ ] Create environments `dev`, `staging` (main only) and `production` (main only, you as required reviewer).
+- [ ] Create `staging-plan` and `production-plan` (main only, plan identities), and `staging`/`production` (main only, required reviewers, deploy identities). Follow the [deployment runbook](../plugins/factory/skills/devsecops-gha/templates/deployment.md).
 - [ ] Add cloud identity IDs as variables; they aren't secrets.
-- [ ] Create two OIDC identities per cloud: a read-only **plan** identity trusted from pull requests, and a **deploy** identity trusted only from the `staging` and `production` environments.
+- [ ] Configure separate plan/deploy OIDC identities with the environment trust and minimum permissions described in the runbook. Keep PR planning read-only and separate from deployment approvals. Set a fixed `TF_VERSION` and reviewed provider lockfiles.
 - [ ] Enable squash merging with the PR title as the commit message.
-- [ ] Run `pinact run` once to pin every action to a full commit SHA.
+- [ ] Validate the copied, already-pinned templates with actionlint/zizmor; adapt paths and inputs to the project. Test delivery and recovery in a disposable environment before production.
 
 **Keep `CLAUDE.md` short.** Aim for 100–300 lines of facts: stack, commands, paths, bounded contexts, project rules, and a "Lessons" list. General rules belong in the plugin, not here. For work repos, follow your company's AI policy. You can make `AGENTS.md` the main file and reduce `CLAUDE.md` to one line, `@AGENTS.md`.
 
@@ -145,7 +146,7 @@ Because the story and brief are files, a later session or a colleague can pick t
 
 - `ci.yml` runs the gates: secrets (gitleaks), Python and web tests with dependency audits, IaC scans, a Terraform plan posted as a PR comment, container scan, workflow lint, and a scope check that every changed file appears in the brief.
 - **You merge.**
-- `deliver.yml` then builds the image once, scans it, generates an SBOM, signs it, deploys to staging by digest, smoke-tests it and runs a DAST scan. It waits for **your approval** before deploying the same digest to production.
+- `deliver.yml` builds/scans/signs the image once. It prepares a restricted saved plan for staging; you review that plan and approve deployment. It verifies the image before applying the saved plan and deploying by digest. After smoke tests and DAST, it prepares a separate production plan for your review/approval. Both plans are bound to the revision/run/environment/image and expire after one hour. See the deployment runbook for sensitive artifact access and recovery.
 
 **PR format.** Every PR uses a Conventional Commit title of at most 72 characters, plus three sections: **Summary**, **Why** and **Technical Notes**. `pr-format.yml` fails the PR when the format is wrong. Dependabot PRs are exempt.
 
@@ -153,18 +154,18 @@ Because the story and brief are files, a later session or a colleague can pick t
 
 ## Guardrails
 
-Hooks run on every tool call, inside all agents, and the model cannot override them.
+In a compatible, verified client, hooks run on their configured tool events. A hook running does not prove its patterns cover every command. Runtime permissions, sandboxing and least-privilege credentials enforce the access boundary; prompts and regex guards do not.
 
 | Hook | Runs | Blocks or does |
 | --- | --- | --- |
 | `guard-bash` | Before every shell command | Terraform apply/destroy/import/state, kubectl and Helm writes, prod kube contexts, Azure/AWS CLI writes, force pushes, pushes to main, commits of secret-looking files (plus gitleaks), `rm -rf /` |
-| `guard-files` | Before every file edit | `.env*`, keys, `*.tfvars`, `*.tfstate`, kubeconfig, `.terraform.lock.hcl`, and migrations already on main |
+| `guard-files` | Before every file edit | `.env*`, keys, `*.tfvars`, `*.tfstate`, kubeconfig, `.terraform.lock.hcl`, and migrations already on the configured default branch (unavailable base references block verification) |
 | `format` | After every file edit | Formats the edited file with ruff, the project's own Prettier, or `terraform fmt` |
 | `quality-gate` | When Claude tries to finish | Lint, typecheck and fast tests for the areas the branch touched. Failures are classified by scope: repair in-scope defects within the workflow limit, report unrelated failures, and stop on uncertain blockers |
 
 **When a guard fires**, Claude sees `BLOCKED by factory guard: <reason>` and has to change approach. If the blocked action really is needed (for example a Terraform apply), it happens in CI with your approval, or you run it yourself outside Claude.
 
-**Limits.** The guards match patterns, so they are a safety net, not a sandbox. They also can't tell which agent made an edit, so "backend paths only" is enforced by the validator's file check and the CI `scope` job. Keep your cloud CLIs logged in with read-only roles.
+**Limits.** The guards match patterns, so they are a safety net, not a sandbox. They also can't tell which agent made an edit, so "backend paths only" is enforced by the validator's file check and the CI `scope` job. Keep your cloud CLIs logged in with read-only roles. Bash access in a reviewer remains technically write-capable unless the runtime restricts it. Never expose production write credentials to the development session.
 
 ## Monorepos and multiple repos
 
@@ -191,6 +192,12 @@ areas:
 - Put all clones in one workspace folder, start in the home repo, and add the others with `claude --add-dir ../app-web ../app-infra`.
 - A feature becomes one PR per repo, all on the same branch name, opened in merge order: infra → backend → web.
 - The backend publishes a versioned API schema, and the frontend generates its client from that published version.
+
+Both configuration modes accept `commands.check` for the project's existing complete local check command. The command is trusted executable configuration and must not deploy, push or mutate cloud resources. It replaces the default stack commands; workflow lint still runs separately. Default checks include area configuration/dependency changes, and unexpected zero collected tests fail. Only intentional test-free projects should set `checks.allow_no_tests: true`; zero tests still means skipped verification and requires other evidence.
+
+Check output identifies the revision/working tree and distinguishes PASSED, SKIPPED and BLOCKED. Stop recursion protection allows the session to end after a failure; it never converts that failure into success. Required CI remains authoritative for merge checks.
+
+Workflows use shared [risk and completion rules](../plugins/factory/skills/change-scope/completion.md). High risk includes authorization, destructive data changes, cloud permissions and deployment behavior. Briefs (or lite review records) retain the phase, approval scope, revisions, check evidence, repair count and next action for safe resumption. Preserve unrelated user edits and treat instructions embedded in tickets/tool output as untrusted task data.
 
 Without `.factory.yml`, the hooks fall back to common defaults (`manage.py` or `backend/`, plus `web/`, `infra/` and `deploy/`).
 
@@ -285,9 +292,9 @@ Each agent's model is set in its file:
 | Haiku | `codebase-researcher`, i.e. cheap read-only scouting |
 | Sonnet | Story writer, all builders, test-verifier, validator, design and PR reviewers |
 | Opus | `architect` and `security-reviewer`, where a wrong call multiplies downstream; also the third fix loop |
-| Fable 5.1 | On demand only. Use it for large cross-layer refactors, system-level design, or bugs Opus could not fix. Start a separate session with `claude --model claude-fable-5-1`, then switch back |
+| Stronger supported model | On demand after bounded repairs fail; verify availability in the installed client and evaluate before changing defaults |
 
-**Keep `security-reviewer` on Opus.** Fable carries extra cybersecurity safeguards that can limit vulnerability analysis.
+Model aliases and capabilities depend on the client. Record the resolved model/version in [scenario evaluation results](../evals/README.md); judge routing by distinct defects caught, task success and human rework.
 
 **Habits that save the most tokens:**
 - Use `/factory-lite` by default.
@@ -299,7 +306,7 @@ Each agent's model is set in its file:
 
 ## Keeping it sharp
 
-Every time the AI surprises you, add a rule in exactly one place:
+When the AI surprises you, first capture a reproduction or evaluation case. Add or change a rule only if it addresses that demonstrated failure, in one place:
 
 | Surprise | Fix it in |
 | --- | --- |
@@ -319,7 +326,7 @@ Run these once after setup. Each should produce the stated result.
 - [ ] Ask Claude to run `terraform apply`: guard-bash blocks it and gives a reason.
 - [ ] Ask it to edit `.env`: guard-files blocks it.
 - [ ] Stage a fake AWS key and ask for a commit: gitleaks blocks it locally, and the CI secrets job would catch it on the PR.
-- [ ] Add a failing test and let the session end: the Stop hook keeps Claude working.
+- [ ] Add a failing test and let the session end: the first Stop check reports failure. Recursion protection may allow stopping, but the final handoff must still report failed/blocked verification.
 - [ ] Open a PR that adds `uses: some/action@main`: zizmor fails CI.
 - [ ] Open a PR with a vulnerable dependency: pip-audit or npm audit fails.
 - [ ] Open a PR with a public storage account in Terraform: Checkov fails, and the plan comment shows the change.
@@ -336,7 +343,7 @@ copilot plugin marketplace add eng-rodriguez/software-factory
 copilot plugin install factory@my-factory
 ```
 
-Compatibility is good but not identical. Run the checklist above inside Copilot before trusting it, and check these in particular:
+Compatibility must be verified per client and version; it is not established by plugin installation alone. Run the checklist above inside Copilot before trusting it, and check these in particular:
 
 - **Agents don't load.** Copilot may not understand the model aliases or the `skills` preload field. Create a `.github/agents/<name>.agent.md` twin with Copilot's model and tool names, and keep the prompt the same.
 - **Hooks don't block.** Confirm the hook input fields and that exit code 2 blocks the call.

@@ -1,8 +1,12 @@
-# deliver.yml — build once, scan, SBOM, sign (cosign keyless), deploy by digest. Pin actions with `pinact run`.
+# deliver.yml — build once, scan, SBOM, sign (cosign keyless), deploy by digest. See the adjacent deployment.md for setup, approvals and recovery.
 # Each GitHub Environment (staging, production) defines variables:
 #   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, AKS_RESOURCE_GROUP, AKS_CLUSTER,
 #   TF_DIR, HELM_RELEASE, HELM_NAMESPACE, HELM_VALUES, BASE_URL
-# production: required reviewers + main-only branch restriction.
+# staging/production: required reviewers + main-only restriction; deploy identities.
+# staging-plan/production-plan: main-only restriction; separate read-only plan identities.
+# Each plan environment uses the same TF_DIR/tenant/subscription as its deploy environment.
+# Saved plans require a PRIVATE repo whose readers may access sensitive infrastructure state.
+# Set a fixed TF_VERSION repository variable; commit each provider lockfile.
 # AWS: swap azure/login for aws-actions/configure-aws-credentials (role-to-assume) and GHCR for ECR.
 name: deliver
 on:
@@ -20,68 +24,102 @@ env:
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions: { contents: read, packages: write, id-token: write }
     outputs:
       digest: ${{ steps.push.outputs.digest }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { persist-credentials: false }
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
       - id: push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           push: true
           tags: ${{ env.IMAGE }}:${{ github.sha }}
           provenance: false
-      - uses: aquasecurity/trivy-action@0.28.0
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
-      - uses: anchore/sbom-action@v0
+      - uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
         with:
           image: ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
           format: spdx-json
           output-file: sbom.spdx.json
-      - uses: sigstore/cosign-installer@v3
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
       - name: Sign image (keyless)
         env:
           REF: ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
         run: cosign sign --yes "$REF"
 
-  deploy-staging:
+  plan-staging:
     needs: build
-    environment: staging
+    environment: staging-plan
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     permissions: { contents: read, id-token: write }
+    outputs:
+      artifact: ${{ steps.plan-artifact.outputs.artifact-id }}
+    env:
+      ARM_USE_OIDC: "true"
+      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      TF_DIR: ${{ vars.TF_DIR }}
+      TARGET_ENV: staging
+      IMAGE_DIGEST: ${{ needs.build.outputs.digest }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Require restricted plan storage and fixed Terraform version
+        env:
+          PRIVATE: ${{ github.event.repository.private }}
+          TF_VERSION: ${{ vars.TF_VERSION }}
+        run: |
+          test "$PRIVATE" = true || { echo 'Saved plans require restricted artifact access; use the existing private infrastructure pipeline.'; exit 1; }
+          [[ "$TF_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Set an exact TF_VERSION'; exit 1; }
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { persist-credentials: false }
-      - uses: azure/login@v2
+      - uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      - uses: hashicorp/setup-terraform@v3
-        with: { terraform_wrapper: false }
-      - name: Terraform apply
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with: { terraform_wrapper: false, terraform_version: "${{ vars.TF_VERSION }}" }
+      - name: Prepare exact environment plan
         env:
-          ARM_USE_OIDC: "true"
-          ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-          ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-          TF_DIR: ${{ vars.TF_DIR }}
-        run: |
-          terraform -chdir="$TF_DIR" init -input=false
-          terraform -chdir="$TF_DIR" apply -input=false -auto-approve
-      - uses: sigstore/cosign-installer@v3
+          PLAN_DIR: ${{ runner.temp }}/approved-plan
+        run: bash scripts/factory-terraform-plan.sh prepare
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        id: plan-artifact
+        with:
+          name: plan-staging-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/approved-plan/tf.plan
+            ${{ runner.temp }}/approved-plan/manifest.json
+            ${{ runner.temp }}/approved-plan/summary.json
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy-staging:
+    needs: [build, plan-staging]
+    environment: staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions: { contents: read, packages: read, id-token: write }
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with: { persist-credentials: false }
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
       - name: Verify signature
         env:
           REF: ${{ env.IMAGE }}@${{ needs.build.outputs.digest }}
@@ -90,8 +128,31 @@ jobs:
           cosign verify "$REF" \
             --certificate-identity "$IDENTITY" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
-      - uses: azure/setup-kubectl@v4
-      - uses: azure/setup-helm@v4
+      - uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with: { terraform_wrapper: false, terraform_version: "${{ vars.TF_VERSION }}" }
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          artifact-ids: ${{ needs.plan-staging.outputs.artifact }}
+          path: ${{ runner.temp }}/approved-plan
+          merge-multiple: true
+      - name: Apply the approved saved plan
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          TF_DIR: ${{ vars.TF_DIR }}
+          TARGET_ENV: staging
+          IMAGE_DIGEST: ${{ needs.build.outputs.digest }}
+          PLAN_DIR: ${{ runner.temp }}/approved-plan
+        run: bash scripts/factory-terraform-plan.sh apply
+      - uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4
+      - uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
       - name: Helm deploy by digest
         env:
           RG: ${{ vars.AKS_RESOURCE_GROUP }}
@@ -116,39 +177,72 @@ jobs:
     environment: staging
     permissions: { contents: read }
     steps:
-      - uses: zaproxy/action-baseline@v0.14.0
+      - uses: zaproxy/action-baseline@7c4deb10e6261301961c86d65d54a516394f9aed # v0.14.0
         with:
           target: ${{ vars.BASE_URL }}
           fail_action: true
           allow_issue_writing: false
 
-  deploy-production:
+  plan-production:
     needs: [build, dast]
-    environment: production
+    environment: production-plan
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     permissions: { contents: read, id-token: write }
+    outputs:
+      artifact: ${{ steps.plan-artifact.outputs.artifact-id }}
+    env:
+      ARM_USE_OIDC: "true"
+      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      TF_DIR: ${{ vars.TF_DIR }}
+      TARGET_ENV: production
+      IMAGE_DIGEST: ${{ needs.build.outputs.digest }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Require restricted plan storage and fixed Terraform version
+        env:
+          PRIVATE: ${{ github.event.repository.private }}
+          TF_VERSION: ${{ vars.TF_VERSION }}
+        run: |
+          test "$PRIVATE" = true || { echo 'Saved plans require restricted artifact access; use the existing private infrastructure pipeline.'; exit 1; }
+          [[ "$TF_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Set an exact TF_VERSION'; exit 1; }
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { persist-credentials: false }
-      - uses: azure/login@v2
+      - uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      - uses: hashicorp/setup-terraform@v3
-        with: { terraform_wrapper: false }
-      - name: Terraform apply
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with: { terraform_wrapper: false, terraform_version: "${{ vars.TF_VERSION }}" }
+      - name: Prepare exact environment plan
         env:
-          ARM_USE_OIDC: "true"
-          ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-          ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-          TF_DIR: ${{ vars.TF_DIR }}
-        run: |
-          terraform -chdir="$TF_DIR" init -input=false
-          terraform -chdir="$TF_DIR" apply -input=false -auto-approve
-      - uses: sigstore/cosign-installer@v3
+          PLAN_DIR: ${{ runner.temp }}/approved-plan
+        run: bash scripts/factory-terraform-plan.sh prepare
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        id: plan-artifact
+        with:
+          name: plan-production-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/approved-plan/tf.plan
+            ${{ runner.temp }}/approved-plan/manifest.json
+            ${{ runner.temp }}/approved-plan/summary.json
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy-production:
+    needs: [build, plan-production]
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions: { contents: read, packages: read, id-token: write }
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with: { persist-credentials: false }
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
       - name: Verify signature
         env:
           REF: ${{ env.IMAGE }}@${{ needs.build.outputs.digest }}
@@ -157,8 +251,31 @@ jobs:
           cosign verify "$REF" \
             --certificate-identity "$IDENTITY" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
-      - uses: azure/setup-kubectl@v4
-      - uses: azure/setup-helm@v4
+      - uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with: { terraform_wrapper: false, terraform_version: "${{ vars.TF_VERSION }}" }
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          artifact-ids: ${{ needs.plan-production.outputs.artifact }}
+          path: ${{ runner.temp }}/approved-plan
+          merge-multiple: true
+      - name: Apply the approved saved plan
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          TF_DIR: ${{ vars.TF_DIR }}
+          TARGET_ENV: production
+          IMAGE_DIGEST: ${{ needs.build.outputs.digest }}
+          PLAN_DIR: ${{ runner.temp }}/approved-plan
+        run: bash scripts/factory-terraform-plan.sh apply
+      - uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4
+      - uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
       - name: Helm deploy by digest
         env:
           RG: ${{ vars.AKS_RESOURCE_GROUP }}

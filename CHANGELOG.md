@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0 - 2026-10-08
+
+* Add factory CI and one local verification command for behavioral tests, distribution metadata/references, shell checks and workflow lint/security checks.
+* Cover common shell guard variants, protect migrations on the configured default branch, and report unavailable base refs. Hooks remain a safety net, not a sandbox.
+* Run existing project check commands in both repository and workspace mode; include dependency/config changes and distinguish skipped checks. Unexpected zero-test runs now fail by default; intentional test-free projects can explicitly configure `checks.allow_no_tests`.
+* Ship pinned action references and versioned, checksum-database-verified Go tool installs. Replace the unavailable Trivy reference with the maintainer's v0.36.0 release; add an explicit pin-update command that includes templates.
+* Preserve existing delivery ownership during onboarding. New Terraform delivery uses environment-specific saved plans, restricted short-lived artifacts, human plan review, signature verification before mutation, and context/checksum/expiry checks before apply. Add a recovery runbook. Existing project pipelines are not migrated automatically.
+* Define risk, completion evidence and finding severity; make lite review consistent with its plan and preserve approvals/repair budgets in resumable checkpoints.
+* Add seven credential-free evaluation fixtures with deterministic outcome graders and explicit human action review, including existing delivery, injected task instructions and interrupted polyrepo work. Live-client results must be recorded separately.
+
 ## 0.5.0 - 2026-10-04
 
 * Add opt-in parent workspace mode: external project configuration and AI artifacts, with repository mode preserved for existing and unlisted projects.
