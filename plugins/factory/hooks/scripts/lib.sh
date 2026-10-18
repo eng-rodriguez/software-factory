@@ -30,9 +30,9 @@ factory_context() {
   rows=$(jq -r '.projects | to_entries[] | [.key, .value.path] | @tsv' <<<"$data")
   while IFS=$'\t' read -r id rel; do
     repo="$dir/$rel"
-    [[ -d "$repo" && ! -L "$repo" ]] && [[ "$(git -C "$repo" rev-parse --show-toplevel 2>/dev/null)" == "$repo" ]] || {
+    if [[ ! -d "$repo" || -L "$repo" ]] || [[ "$(git -C "$repo" rev-parse --show-toplevel 2>/dev/null)" != "$repo" ]]; then
       factory_error "project $id must be an existing direct-child Git root (no symlink)"; return 2;
-    }
+    fi
     cfg="$dir/.factory/projects/$id.yml"
     [[ -f "$cfg" && ! -L "$cfg" && ! -L "$dir/.factory" && ! -L "$dir/.factory/projects" ]] || {
       factory_error "missing or symlinked external config: $cfg"; return 2;
