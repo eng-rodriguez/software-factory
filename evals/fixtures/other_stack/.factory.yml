@@ -1,0 +1,5 @@
+areas:
+  backend: {path: api, stack: go}
+  web: {path: web, stack: angular}
+commands:
+  check: cd api && GOTOOLCHAIN=local go test ./...

@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: service}
+spec:
+  selector: {matchLabels: {app: service}}
+  template:
+    metadata: {labels: {app: service}}
+    spec:
+      containers:
+        - name: service
+          image: registry.example.invalid/service@sha256:1111111111111111111111111111111111111111111111111111111111111111

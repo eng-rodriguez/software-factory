@@ -14,6 +14,19 @@ def yaml(path):
 
 
 class DistributionTests(unittest.TestCase):
+    def test_skill_metadata_is_discoverable(self):
+        for path in (ROOT / 'plugins/factory/skills').glob('*/SKILL.md'):
+            with self.subTest(skill=path.parent.name):
+                text = path.read_text()
+                self.assertTrue(text.startswith('---\n'))
+                metadata = json.loads(subprocess.check_output(['yq', '-o=json', '.'],
+                    input=text.split('---', 2)[1], text=True))
+                self.assertEqual(metadata['name'], path.parent.name)
+                self.assertRegex(metadata['name'], r'^[a-z0-9]+(?:-[a-z0-9]+)*$')
+                self.assertIsInstance(metadata['description'], str)
+                self.assertTrue(metadata['description'].strip())
+                self.assertLessEqual(len(metadata['description']), 1024)
+
     def test_json_and_yaml_parse(self):
         for folder in ['plugins', 'settings', '.claude-plugin', '.github', 'evals']:
             for path in (ROOT / folder).rglob('*'):
@@ -33,6 +46,20 @@ class DistributionTests(unittest.TestCase):
                 target = target.split('#')[0]
                 with self.subTest(path=path, target=target):
                     self.assertTrue((path.parent / target).exists())
+
+    def test_agent_skill_preloads_and_routing_targets_resolve(self):
+        plugin = ROOT / 'plugins/factory'
+        for path in (plugin / 'agents').glob('*.md'):
+            frontmatter = path.read_text().split('---', 2)[1]
+            metadata = json.loads(subprocess.check_output(['yq', '-o=json', '.'],
+                input=frontmatter, text=True))
+            for skill in metadata.get('skills', '').split(','):
+                if skill.strip():
+                    with self.subTest(agent=path.name, skill=skill):
+                        self.assertTrue((plugin / 'skills' / skill.strip() / 'SKILL.md').is_file())
+        routing = (plugin / 'skills/stack-context/SKILL.md').read_text()
+        for agent in re.findall(r'factory:([a-z-]+)', routing):
+            self.assertTrue((plugin / 'agents' / f'{agent}.md').is_file(), agent)
 
     def test_actions_use_immutable_references(self):
         files = list(TEMPLATES.glob('*.yml')) + list((ROOT / '.github/workflows').glob('*.yml'))

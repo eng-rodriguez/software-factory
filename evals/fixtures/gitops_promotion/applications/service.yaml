@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: service-production, namespace: argocd}
+spec:
+  project: existing
+  source:
+    repoURL: https://example.invalid/config.git
+    targetRevision: main
+    path: environments/production
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: service
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}

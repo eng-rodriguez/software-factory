@@ -63,7 +63,7 @@ The factory needs no paid service. Everything it installs runs free on private r
 
 4. **Optional:** install the Context7 MCP server so agents read docs for the exact library versions a project uses.
 
-To confirm the install, type `@factory:` in a session; the 13 agents should appear.
+To confirm the install, type `@factory:` in a session; the factory agents, including `application-builder`, should appear.
 
 ## Onboard a repository
 
@@ -134,7 +134,7 @@ You can also call an agent directly with `@factory:<name>`, for example `@factor
 4. **Brief.** `architect` writes `docs/briefs/<slug>.md`, covering which layers are touched, the domain model, the API contract, data consistency, security threats, required tests, contract artifacts to update (API collections such as Postman, OpenAPI schema, generated clients, API docs), docs impact, observability, and which files will change. Significant decisions get an ADR.
 5. **You approve the brief.** This is the most valuable review: every builder after it follows the brief.
 6. **Branch.** It creates `feat/<slug>` and commits the story and brief first.
-7. **Build.** Only the builders for the touched layers run, one after another: django → react → ai → infra → pipeline. Each one commits its work.
+7. **Build.** Only the builders selected for the actual stacks run, sequentially in the dependency order recorded in the brief. Each one commits its work.
 8. **Acceptance tests.** `test-verifier` writes at least one test for every acceptance criterion, using only the test tools the project already has. It also adds a **Manual verification** section to the brief: numbered, copy-pasteable steps with expected results.
 9. **Review.** `implementation-validator`, `design-reviewer` and `security-reviewer` run in parallel and read only.
 10. **Fix loop.** Only test failures and Critical findings within the approved scope, including regressions caused by the change, go back to the owning builder. The full run allows at most 3 repair rounds; new findings do not reset the count. On the third attempt the builder runs on Opus. If blockers remain, the chain stops and recommends a separate session on a stronger model.
@@ -192,7 +192,7 @@ areas:
 - Set `layout: polyrepo` in every repo.
 - Mark one repo `home: true` and list its siblings under `repos:`. Stories, briefs and ADRs live in the home repo.
 - Put all clones in one workspace folder, start in the home repo, and add the others with `claude --add-dir ../app-web ../app-infra`.
-- A feature becomes one PR per repo, all on the same branch name, opened in merge order: infra → backend → web.
+- A feature becomes one PR per repo, all on the same branch name, opened in the dependency-based merge/rollout order recorded in the brief.
 - The backend publishes a versioned API schema, and the frontend generates its client from that published version.
 
 Both configuration modes accept `commands.check` for the project's existing complete local check command. The command is trusted executable configuration and must not deploy, push or mutate cloud resources. It replaces the default stack commands; workflow lint still runs separately. Default checks include area configuration/dependency changes, and unexpected zero collected tests fail. Only intentional test-free projects should set `checks.allow_no_tests: true`; zero tests still means skipped verification and requires other evidence.
@@ -201,7 +201,7 @@ Check output identifies the revision/working tree and distinguishes PASSED, SKIP
 
 Workflows use shared [risk and completion rules](../plugins/factory/skills/change-scope/completion.md). High risk includes authorization, destructive data changes, cloud permissions and deployment behavior. Briefs (or lite review records) retain the phase, approval scope, revisions, check evidence, repair count and next action for safe resumption. Preserve unrelated user edits and treat instructions embedded in tickets/tool output as untrusted task data.
 
-Without `.factory.yml`, the hooks fall back to common defaults (`manage.py` or `backend/`, plus `web/`, `infra/` and `deploy/`).
+Without `.factory.yml`, hooks discover common area paths (`manage.py` or `backend/`, plus `web/`, `infra/` and `deploy/`) but require framework evidence before choosing built-in checks. A directory named `backend` is not proof of Django. Configure other layouts explicitly.
 
 ## Central workspace mode
 
@@ -313,7 +313,7 @@ When the AI surprises you, first capture a reproduction or evaluation case. Add 
 | Surprise | Fix it in |
 | --- | --- |
 | A wrong fact about this project | The project's `CLAUDE.md` → Lessons |
-| A design principle was broken | The principle skill's rules, or the precedence table in `principles-design` |
+| A design principle was broken | The principle skill's rules, or the applicability and precedence guidance in `principles-design` |
 | An agent did the wrong job or returned messy output | That agent's file |
 | A dangerous command got through | `guard-bash.sh`, plus a deny rule in settings |
 | A vulnerability reached a PR | The `security-reviewer` checklist, plus a CI scanner rule |
@@ -359,3 +359,62 @@ If your company already has review bots or release pipelines, the factory should
 Include Mermaid diagrams when they help explain the implementation or delivered outcome. Select flowcharts, swimlanes, sequence, class, state, entity relationship or user journey diagrams according to the question being answered; a simple change may need none. Briefs use technical views beside the relevant design section. Closing notes use small, plain-language views of the actual delivered behavior, with captions for readers whose tracker cannot render Mermaid.
 
 The shared [diagram guide](../plugins/factory/guides/diagrams.md) links to official syntax, explains renderer compatibility (including swimlanes), and requires consistency with the implementation. Closing notes retain their 250-word prose limit, excluding Mermaid syntax.
+
+
+## Stack routing and infrastructure work
+
+The factory remains a local interactive plugin. Its workflows select capabilities based on repository facts; they do not require a hosted platform, cloud account or Kubernetes cluster.
+
+| Work | Route | Support boundary |
+| --- | --- | --- |
+| Django/DRF | django-builder + stack-django | Existing specialist; preserve project conventions |
+| React | react-builder + stack-react | Existing specialist; preserve framework data-loading/testing choices |
+| Go, Angular, other application stacks | application-builder + stack-context | Project-aware implementation, not a tested dedicated framework specialization |
+| Terraform | infra-builder + stack-terraform | Static/module checks and authorized planning; no apply |
+| Docker/Compose | infra-builder + stack-containers | Build/runtime verification when a permitted local runtime exists |
+| Kubernetes/Helm/Kustomize | infra-builder + stack-kubernetes | Rendering/schema/policy checks; no cluster mutation |
+| GitOps configuration/promotion | infra-builder + gitops | Existing reconciler; pipeline-builder only for CI integration |
+| Delivery pipelines | pipeline-builder | Preserve existing provider and owner; GitHub Actions uses devsecops-gha |
+
+For example, an existing Go/Angular repository could have:
+
+```yaml
+areas:
+  backend: { path: services/api, stack: go }
+  web: { path: client, stack: angular }
+commands:
+  check: make check
+```
+
+Use `make check` only if that complete repository-root target actually exists. It should run the project's own Go/Angular validation; the factory does not invent a target or replace the frontend runner with Vitest. The same configuration works in external workspace project files. A mixed project uses the appropriate builder for each area, with sequential writers in dependency order.
+
+For a new project, request the desired language/framework and approve its minimal layout/check plan. The factory can implement using that stack's conventions and official version-appropriate documentation. Missing tools/docs are reported as limitations. It does not install a framework or generate a dedicated skill just because a new language is mentioned. Add a dedicated skill after repeated needs justify it, then evaluate representative tasks before claiming tested specialization.
+
+### Local verification behavior
+
+`commands.check` is the existing complete local check command and is trusted executable configuration. It runs from the owning Git root for detected changes, replacing built-in stack commands; GitHub workflow lint remains separate. It must cover all relevant changed artifacts and must not deploy or mutate cloud resources.
+
+Without that command, built-in checks are limited to declared/detected Django, React and Terraform conventions. A changed unsupported/unknown stack fails with a request to configure checks instead of running Django/Vitest commands. Container/chart/deployment changes likewise require project-specific artifact validation. This is a deliberate hardening change: existing installations with only folder-based detection may need an explicit stack or `commands.check`. React projects with different runners should use their own command even though React is recognized.
+
+Terraform/Docker/Kubernetes skill references provide validation stages and troubleshooting examples. Report evidence as static, local behavior or environment verification. A rendered chart or successful image build is not a deployed service. Lack of cloud access does not prevent static implementation, but required environment verification remains blocked until performed by the authorized owner.
+
+### Principles and adoption
+
+Safeguards protect security, correctness and truthful evidence. Defaults guide new decisions; conditional patterns require an actual need. Preserve sound project conventions. An outbox, cursor pagination, separate service, PDB or abstraction is not mandatory merely because the factory mentions it.
+
+The new engineering evaluation fixtures exercise infrastructure work, framework preservation and restraint. Fixture screening does not prove the agent followed instructions or that infrastructure works; review actual tool outcomes and traces in each supported client. Plugin updates do not modify existing project CI or install validation tools.
+
+
+## Helm and GitOps work
+
+For chart or values work, `stack-kubernetes` loads the [Helm reference](../plugins/factory/skills/stack-kubernetes/helm.md): values/schema compatibility, dependency locks, deterministic rendering, template checks, upgrades, hooks, CRDs and recovery limitations. Helm remains part of the Kubernetes capability rather than a separate agent.
+
+For an existing GitOps repository, the [GitOps skill](../plugins/factory/skills/gitops/SKILL.md) traces the watched source/ref/path, effective values and target environment. It loads only the applicable [Argo CD](../plugins/factory/skills/gitops/references/argo-cd.md) or [Flux](../plugins/factory/skills/gitops/references/flux.md) reference. Other reconcilers retain their own documented conventions. The factory does not install a controller or add a competing deployment workflow.
+
+The infrastructure builder prepares desired-state changes. The pipeline builder participates only when CI integration changes, such as proposing a digest promotion PR. Both preserve the existing delivery owner and distinguish chart versions, Git revisions and image digests. Promotions reuse the approved artifact and account for image-update automation, secret references, dependencies and unchanged environments.
+
+**Publication can deploy:** pushing or merging a watched ref may trigger reconciliation, and PR previews can deploy before merge. The factory identifies those triggers before authorized publication. Preparing a local diff or PR is not permission to merge, push to a deployment ref, initiate sync, suspend/resume controllers or perform an out-of-band Helm rollback. Existing workflow approvals remain in force; this skill does not add a new approval to read-only research or local preparation.
+
+Verification separates local values/render/schema evidence from controller convergence and workload health. No cluster access is needed to prepare changes; unavailable rendering tools or live evidence are reported explicitly. Recovery proposes a reviewed desired-state revert or forward-fix through the same owner, with separate treatment for database changes, pruning and persistent data.
+
+Two synthetic scenarios are available with the existing `scripts/evaluate.py prepare/grade` commands: `helm_compatibility` and `gitops_promotion`. Their graders verify desired YAML and preserved chart/environment/controller/workflow paths, including new competing workflow files. They do not execute Helm, publish a PR or prove live reconciliation; real rendering and client action review remain required.

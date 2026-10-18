@@ -1,0 +1,8 @@
+name: desired-state verification
+on: [pull_request]
+permissions: {}
+jobs:
+  fixture:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Synthetic CI only; Argo CD owns deployment"

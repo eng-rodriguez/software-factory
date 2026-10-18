@@ -3,6 +3,7 @@ name: onboard-project
 description: Sets up an existing repo for the software factory - detects layout and commands, writes .factory.yml and CLAUDE.md (or AGENTS.md), docs skeleton, PR template, CODEOWNERS and the devsecops workflows, then opens one PR. Use the first time the factory touches a repo, or for /onboard-project.
 ---
 First use [workspace-context](../workspace-context/SKILL.md) to resolve the mode, project context and artifact paths. In workspace mode its path, commit, onboarding and CI rules override the repository-mode defaults below.
+Then use [stack-context](../stack-context/SKILL.md) to select the actual stack, builder and project checks.
 Follow the shared [author identity and writing voice](../../guides/authorship.md) rules for all written artifacts, commits and PR publication.
 
 
@@ -12,12 +13,12 @@ Templates are in [templates/](templates/). Never restructure the repo; record th
 
 1. Detect, without writing anything:
    - Layout: monorepo (backend/web/infra together) or polyrepo (one layer here, siblings nearby).
-   - Areas and paths: Django (manage.py, pyproject), React (package.json with react), Terraform (*.tf), Helm/Kustomize, Dockerfile.
-   - Commands: Makefile targets, pyproject scripts, package.json scripts, uv vs pip.
+   - Areas and paths: detect actual language/framework manifests and source (for example Django manage.py, React/Angular dependencies, Go go.mod), Terraform roots, Helm/Kustomize, Dockerfiles/Compose. Directory names do not establish a stack. Record unsupported specializations honestly and route through stack-context.
+   - Commands: existing Makefile/tasks, language/package scripts, package manager and lockfiles, CI checks and test runners. Record a complete `commands.check` from the Git root for other stacks or customized tooling; do not substitute Django/Vitest commands. Missing checks need an explicit proposal, not an invented command.
    - API contract artifacts: an API collection (a `postman/` folder or `*.postman_collection.json`), an OpenAPI schema, a generated client. Record their paths in CLAUDE.md; "none" if absent. Never restructure an existing collection.
    - Test tools already in use (pytest, Vitest, Playwright, ...), recorded in CLAUDE.md.
    - Existing CLAUDE.md / AGENTS.md, .github/workflows, CODEOWNERS, docs/.
-   - Delivery owner and triggers, existing CI checks, GitOps/release mechanism, and recovery runbook. Map which existing workflow covers each required check before proposing additions.
+   - Delivery owner and triggers, existing CI checks, GitOps/release mechanism, and recovery runbook. For GitOps load [GitOps](../gitops/SKILL.md) and record watched refs/paths, preview triggers, controller/version, effective values sources and automatic deployment implications. Map which existing workflow covers each required check before proposing additions.
    - Default branch: `git symbolic-ref refs/remotes/origin/HEAD`.
    - Work or personal: ask the human if unclear. For work repos write AGENTS.md as the canonical file and CLAUDE.md containing only `@AGENTS.md`.
 2. Draft `.factory.yml` from templates/factory.yml.tmpl and `CLAUDE.md` from templates/CLAUDE.md.tmpl, filled only with detected facts; mark unknowns `<TODO>`. Keep CLAUDE.md under 150 lines.
@@ -25,7 +26,7 @@ Templates are in [templates/](templates/). Never restructure the repo; record th
 4. Create branch `chore/onboard-factory`.
 5. Create the docs skeleton if missing: docs/domain.md (templates/domain.md.tmpl), docs/adr/, docs/briefs/, docs/stories/, docs/closing-notes/ (add .gitkeep to empty folders).
 6. Copy templates/pull_request_template.md to .github/pull_request_template.md and templates/CODEOWNERS.tmpl to .github/CODEOWNERS with real paths and owner. Copy templates/smoke.sh to scripts/smoke.sh if the repo deploys a service.
-7. factory:pipeline-builder: reuse existing CI and delivery ownership. Propose only missing checks; do not install a second workflow that deploys to an environment already managed by CI or GitOps. A different filename does not avoid duplicate deployment triggers. Preserve existing workflows unless the user explicitly authorizes a targeted integration change. Add deliver.yml only when no equivalent delivery exists and the approved onboarding scope includes deployment setup. When adding it, copy terraform-plan.sh to scripts/factory-terraform-plan.sh and adapt deployment.md into the existing operations docs; report all environment/identity prerequisites. Copy missing ci/pr-format/dependabot templates only after checking semantic overlap, not just filenames. Validate the resulting workflows with actionlint and zizmor; the distributed actions are already pinned.
+7. factory:pipeline-builder: reuse existing CI and delivery ownership. Propose only missing checks; do not install a second workflow that deploys to an environment already managed by CI or GitOps. A different filename does not avoid duplicate deployment triggers. Preserve existing workflows unless the user explicitly authorizes a targeted integration change. Add deliver.yml only when no equivalent delivery exists and the approved onboarding scope includes deployment setup. When adding it, copy terraform-plan.sh to scripts/factory-terraform-plan.sh and adapt deployment.md into the existing operations docs; report all environment/identity prerequisites. Copy missing ci/pr-format/dependabot templates only after checking semantic overlap, not just filenames. Remove inapplicable stack jobs before proposing a template; configure actual package ecosystems/paths and preserve existing non-GitHub CI. Validate the resulting workflows with actionlint and zizmor; the distributed actions are already pinned.
 8. Commit in small Conventional Commits (chore(factory): ..., ci: ...). No Co-Authored-By trailers or tool footers.
 9. Draft the PR with the pr-format skill. Technical Notes must list the GitHub settings the human may want to configure: Dependabot alerts, Actions policy, environments, OIDC identity variables. Never list paid features (Advanced Security, hosted AI review) as required. Never create, change or recommend replacing rulesets or branch protection; existing ones belong to the repo owner or the organization, especially in work repos.
 10. ASK HUMAN: open the PR? On yes, push and run gh pr create --body-file. Never merge.

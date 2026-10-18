@@ -67,6 +67,27 @@ area_path() {
   esac
 }
 
+# Explicit stack values win; otherwise require framework evidence, not a folder name.
+area_stack() {
+  local stack p
+  if has_cfg; then
+    stack=$(yq -r ".areas.$1.stack // \"\"" "$CFG") || return 2
+    if [[ -n "$stack" ]]; then printf '%s\n' "$stack"; return; fi
+  fi
+  p=$(area_path "$1")
+  [[ -n "$p" ]] || return 0
+  case "$1" in
+    backend) [[ ! -f "$ROOT/$p/manage.py" ]] || echo django ;;
+    web)
+      if [[ -f "$ROOT/$p/package.json" ]] && jq -e '(.dependencies.react // .devDependencies.react) != null' "$ROOT/$p/package.json" >/dev/null 2>&1; then
+        echo react
+      fi ;;
+    infra)
+      if [[ -n "$(find "$ROOT/$p" -name '*.tf' -type f -print -quit 2>/dev/null)" ]]; then echo terraform; fi ;;
+  esac
+  return 0
+}
+
 # Files changed on this branch, staged, unstaged or new
 changed_files() {
   local base; base=$(git merge-base HEAD "origin/$(default_branch)" 2>/dev/null || git rev-parse HEAD 2>/dev/null)

@@ -1,0 +1,2 @@
+readinessDelay: 5
+image: {repository: example.invalid/app, digest: "sha256:fixture"}

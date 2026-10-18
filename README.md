@@ -1,6 +1,6 @@
 # Software Factory
 
-Personal Claude Code plugin: agents, principle and stack skills, guardrail hooks and DevSecOps templates for Django/DRF, React, Terraform, Azure/AWS and containers.
+Local AI development plugin: agents, principles, stack skills, guardrail hooks and delivery templates. Django/DRF and React specialists remain available; a project-aware application builder handles other stacks using their existing conventions and checks. Infrastructure guidance covers Terraform, Docker/Compose, Kubernetes/Helm and existing GitOps delivery.
 
 **How to use it:** see [docs/USAGE.md](docs/USAGE.md) for setup, onboarding a repo, the daily commands, the feature chain, guardrails and model routing.
 
@@ -42,6 +42,10 @@ For teams that keep AI files outside application repositories, use the opt-in
 [central workspace mode](docs/USAGE.md#central-workspace-mode). Configuration and
 planning artifacts live in the parent folder; each child keeps its own Git history
 and checks. Existing onboarded repositories keep their current behavior.
+
+## Stack support
+
+The factory detects project frameworks instead of selecting them from directory names. See [stack routing and infrastructure work](docs/USAGE.md#stack-routing-and-infrastructure-work) for Go/Angular examples, validation requirements and specialization limits. No hosted factory service or cluster is required.
 
 ## Commands
 

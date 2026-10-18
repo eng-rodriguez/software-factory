@@ -1,23 +1,20 @@
 ---
 name: principles-services
-description: Service boundary rules from Building Microservices. Use when deciding whether to extract a service, designing cross-context communication, contracts, deployables, or reviewing infra and pipeline changes that add services.
+description: Service ownership and remote-call reliability guidance. Use when considering service extraction or changing distributed interactions.
 ---
 
-## Rules
-1. Default to a modular monolith. Extract a service only for independent deployability, scaling, or team ownership; record the reason in an ADR.
-2. A service owns its data. No shared databases, no reading another service's tables.
-3. Prefer asynchronous events for cross-context notifications; use synchronous calls only when the caller needs the answer now, with timeouts and retries.
-4. Each deployable has its own pipeline, image, health checks and dashboards.
-5. Contracts are versioned; consumers never break on deploy (expand, migrate, contract).
-6. Every synchronous call has a timeout, bounded retries with backoff, and a defined fallback.
-7. Services are observable from day one: structured logs, request IDs propagated across calls, metrics for latency, errors and saturation.
-8. Configuration comes from the environment; the same image runs in every environment.
+Follow [principles-design](../principles-design/SKILL.md) for applicability and precedence.
 
-## Review questions
-- Which driver (deployability, scaling, ownership) justifies a new service, and which ADR records it?
-- Does any component read or write data it does not own?
-- What happens to callers when this dependency is slow or down?
-- Can this change deploy without coordinating a release with another deployable?
+## Defaults
+1. Prefer a modular monolith. Extract a service for a demonstrated deployment, scaling, isolation or team-ownership need; record lasting tradeoffs in an ADR.
+2. Give independently deployed services explicit data ownership. Avoid direct access to another service's tables; shared physical database hosting is distinct from shared table ownership. Preserve documented transitional arrangements without silently expanding them.
+3. Choose synchronous calls when a response is needed and events when asynchronous decoupling is useful. In-process module calls do not need distributed messaging.
+4. Give deployables appropriate build, health and operational evidence. Pipelines and dashboards may be shared when ownership remains clear.
+5. Preserve consumer compatibility through the rollout. Reuse the same immutable artifact across environments when feasible; keep environment configuration and secrets external.
 
-## Precedence
-See principles-design → Precedence when a rule here conflicts with another book.
+## Safeguards and conditional reliability controls
+6. Remote calls need timeouts/deadlines. Retry only eligible failures on safe/idempotent operations, with bounded backoff and jitter where appropriate; avoid retries at every layer. Use a fallback only if its semantics are valid, otherwise fail explicitly.
+7. Add logs, correlation, metrics and alerts appropriate to operational risk and existing tooling, without sensitive data. Do not add an observability platform for a small code change.
+
+## Review
+Which requirement needs a service boundary? Who owns the data? What happens when the dependency is unavailable, slow, or returns after a timeout? Can callers tolerate the rollout order?

@@ -1,5 +1,6 @@
 """Check the fixtures and deterministic graders, not live agent behavior."""
 import os
+import json
 from pathlib import Path
 import subprocess
 import tempfile
@@ -62,6 +63,60 @@ class EvaluationFixtureTests(unittest.TestCase):
             marker.write_text('user work')
             self.assertNotEqual(self.run_eval('prepare', 'bug', root).returncode, 0)
             self.assertEqual(marker.read_text(), 'user work')
+
+    def test_engineering_fixtures_require_changes_and_manual_evidence(self):
+        scenarios = json.loads((SCRIPT.parent.parent / 'evals/scenarios.json').read_text())
+        with tempfile.TemporaryDirectory(prefix='factory engineering ') as directory:
+            for scenario in (s for s in scenarios if 'target_changed' in s['checks']):
+                with self.subTest(scenario=scenario['id']):
+                    root = Path(directory) / scenario['id']
+                    result = self.run_eval('prepare', scenario['id'], root)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(self.run_eval('grade', scenario['id'], root).returncode, 1)
+                    target = root / scenario['target']
+                    target.write_text(target.read_text() + '\n# Deliberately not a correctness proof\n')
+                    result = self.run_eval('grade', scenario['id'], root)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    report = json.loads(result.stdout)
+                    self.assertIn('not engineering correctness', report['grading_scope'])
+                    self.assertTrue(report['manual_review_required'])
+                    (root / 'user-notes.txt').write_text('lost')
+                    self.assertEqual(self.run_eval('grade', scenario['id'], root).returncode, 1)
+
+    def test_delivery_contracts_reject_wrong_values_and_owner_changes(self):
+        scenarios = json.loads((SCRIPT.parent.parent / 'evals/scenarios.json').read_text())
+        with tempfile.TemporaryDirectory(prefix='factory delivery ') as directory:
+            for scenario in (s for s in scenarios if 'expected_yaml' in s):
+                with self.subTest(scenario=scenario['id']):
+                    root = Path(directory) / scenario['id']
+                    self.assertEqual(self.run_eval('prepare', scenario['id'], root).returncode, 0)
+                    self.assertEqual(self.run_eval('grade', scenario['id'], root).returncode, 1)
+                    target = root / scenario['target']
+                    # An arbitrary edit must not satisfy the desired-state contract.
+                    target.write_text(target.read_text() + '\n# changed\n')
+                    self.assertEqual(self.run_eval('grade', scenario['id'], root).returncode, 1)
+                    target.write_text(json.dumps(scenario['expected_yaml']))
+                    result = self.run_eval('grade', scenario['id'], root)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertIn('not rendering or reconciliation', result.stdout)
+                    # A second deployment workflow is forbidden even if the target is correct.
+                    workflow = root / '.github/workflows/competing.yml'
+                    workflow.parent.mkdir(parents=True, exist_ok=True)
+                    workflow.write_text('name: competing deployment\n')
+                    self.assertEqual(self.run_eval('grade', scenario['id'], root).returncode, 1)
+                    (root / '.gitignore').write_text('.github/workflows/competing.yml\n')
+                    self.assertEqual(self.run_eval('grade', scenario['id'], root).returncode, 1)
+                    workflow.unlink()
+                    # Preserve the existing owner/consumer, including after a commit.
+                    protected = root / scenario['protected_paths'][0]
+                    protected = next(p for p in protected.rglob('*') if p.is_file())
+                    protected.write_text(protected.read_text() + '\n# unauthorized change\n')
+                    subprocess.run(['git', '-C', str(root), 'add', str(protected.relative_to(root))], check=True, capture_output=True)
+                    subprocess.run(['git', '-C', str(root), '-c', 'user.name=Fixture', '-c',
+                        'user.email=fixture@example.invalid', 'commit', '-qm', 'changed owner'],
+                        check=True, capture_output=True)
+                    report = json.loads(self.run_eval('grade', scenario['id'], root).stdout)
+                    self.assertFalse(report['outcomes']['preserved_paths'])
 
 
 if __name__ == '__main__':

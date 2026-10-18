@@ -1,22 +1,23 @@
 ---
 name: principles-domain
-description: Domain modeling rules from DDD and Architecture Patterns with Python, adapted to Django. Use when designing models, aggregates, bounded contexts, services, or when reviewing where business logic lives.
+description: Domain ownership and invariant guidance across languages and frameworks. Use when designing business models, module boundaries or cross-context interactions.
 ---
 
-## Rules
-1. One Django app = one bounded context. Name it in the ubiquitous language.
-2. No cross-context model imports. Contexts call each other's service functions or consume events.
-3. Business rules live in services.py (writes) or model methods that guard invariants. Never in views, serializers or React.
-4. Reads that span tables go in selectors.py and return plain data, not querysets leaked to views.
-5. An aggregate is the unit of consistency: one transaction changes one aggregate. Cross-aggregate updates go through events.
-6. Repository + Unit of Work only in core domains whose logic is complex enough to unit-test without the database.
-7. Value objects (money, email, date ranges) are immutable dataclasses with validation.
-8. Name things from the domain glossary in docs/domain.md; add new terms there first.
+Follow [principles-design](../principles-design/SKILL.md) for applicability and precedence.
 
-## Review questions
-- Which bounded context owns this change? Does it reach into another one?
-- Which invariant does each aggregate protect, and where is it enforced?
-- Could a new developer find this rule by reading services.py?
+## Safeguards
+1. Name the owner of authoritative business rules and enforce them at the trusted boundary. Client-side validation can improve feedback but cannot replace authorization or server-side invariant checks.
+2. Keep cross-context access explicit through the project's agreed interfaces. Do not bypass ownership or tenant isolation for convenience.
 
-## Precedence
-See principles-design → Precedence when a rule here conflicts with another book.
+## Defaults
+3. Model bounded contexts by business language and ownership, not framework package counts. A context may span multiple modules/apps; map it to existing code before proposing a new boundary.
+4. Put meaningful use cases and invariants in discoverable domain/application code. Preserve simple framework CRUD where it is sufficient; services and selectors are conventions, not mandatory pass-through layers.
+5. Keep domain terms consistent with the existing glossary; update it when introducing a substantive new concept.
+
+## Conditional patterns
+6. Aggregates identify consistency boundaries. Prefer local atomic transactions when they safely meet requirements; a cross-aggregate update does not automatically require asynchronous events. Explain coordination and failure semantics when boundaries are distributed.
+7. Introduce repository/unit-of-work abstractions when a real domain/testing boundary benefits; do not wrap an ORM mechanically.
+8. Use immutable validated value types when their semantics warrant them, using the language's idioms rather than requiring Python dataclasses.
+
+## Review
+Who owns the rule? Where is it enforced? What prevents invalid intermediate state? Does the change introduce a boundary or abstraction without a concrete benefit?

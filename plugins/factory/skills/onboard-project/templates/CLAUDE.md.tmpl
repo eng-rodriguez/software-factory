@@ -1,38 +1,40 @@
 # <Project name>
-<One sentence: what it does and for whom.> Context: personal | work (<team>).
+<One sentence: purpose and users.> Context: <personal | work>.
 
-## Stack (installed versions are the source of truth; check them, use Context7 for docs)
-- Backend: Python 3.12, Django 5.x, DRF, Celery + Redis, PostgreSQL 16
-- Frontend: React 18, TypeScript (strict), Vite, TanStack Query, generated client from schema.yml
-- Infra: Terraform 1.9, <azurerm|aws> provider, <AKS|EKS|Container Apps|ECS>, Helm
-- CI/CD: GitHub Actions (ci, deliver), OIDC to <Azure|AWS>
+## Detected stack
+- Backend: <language/framework and installed versions, or none>
+- Frontend: <language/framework and installed versions, or none>
+- Infrastructure/runtime: <actual tools, providers and versions, or none>
+- CI/delivery owner: <existing system, workflow/controller and environments>
+- Factory routing: <specialist or project-aware builder per area; limitations>
+Installed manifests/lockfiles and source are evidence; do not fill these from example defaults. Consult official version-appropriate docs when needed.
 
-## Bounded contexts
-| App | Owns | Talks to |
-| --- | --- | --- |
-| <app> | <aggregates> | <context> (service call | events) |
+## Ownership and contracts
+<Components/modules/services/infrastructure roots and their responsibilities.>
+<Domain glossary, API schema/collection/generated clients and paths, or none.>
 
-## Commands
-- make dev · make test · make lint · make typecheck · make migrations-check
-- npm --prefix web run dev | test | lint
-- make tf-plan ENV=dev   (never apply locally)
+## Existing commands
+- Complete verification from Git root: <detected command or unknown>
+- Build/run: <detected commands or not applicable>
+- Tests/static checks: <detected commands and scope>
+- Infrastructure validation: <credential-free commands; authorized plan lane if available>
+Never deploy/apply from the development workflow. Unknown commands are not verification.
 
 ## Paths
-backend: apps/ · web: web/ · infra: infra/ · deploy: deploy/ · briefs: docs/briefs/
-api collection: <path or none> · api schema: <path or none> · test tools: <pytest, vitest, ...>
+<Actual backend, web, infra, deploy and supporting config paths; omit absent areas.>
+<Planning artifact paths according to repository/workspace mode.>
 
-## Architecture rules (project-specific; general rules live in the factory plugin)
-- Tenant isolation: <how querysets are scoped>.
-- Auth: <session + CSRF | JWT> via <library>; permissions in <path>.
-- Events: <outbox table and relay>.
+## Project-specific decisions
+<Authorization/tenant boundaries, data consistency, UI conventions and operational constraints as applicable.>
+<Existing decisions that differ from factory defaults, with reasons.>
 
-## Environments
-dev (auto), staging (main), production (approval). Cloud: <subscription/account ids by name, not secrets>.
+## Verification and recovery
+<Static/local/environment evidence needed; unavailable access; release/recovery owner.>
 
 ## Don't
-- Log tokens, PII or raw payment payloads.
-- Add a dependency without noting it in the brief.
-- Edit migrations that exist on the configured default branch.
+- Log credentials or sensitive user data.
+- Change framework, deployment ownership or dependencies outside approved scope.
+- Edit migrations already on the configured default branch.
 
-## Lessons (append when the AI surprises you)
-- <date>: <rule that would have prevented the mistake>
+## Lessons
+<Concise observed lessons, not speculative rules.>

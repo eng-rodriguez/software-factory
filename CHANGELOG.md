@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.8.0 - 2026-10-17
+
+* Add Helm chart engineering guidance for values/schema compatibility, locked dependencies, template validation, hooks, CRDs and recovery limits.
+* Add a GitOps skill with selectively loaded Argo CD and Flux references; preserve deployment ownership and separate desired-state PR preparation from watched-ref publication and reconciliation.
+* Connect Helm/GitOps guidance to stack routing, infrastructure/pipeline builders, reviewers, onboarding and verification evidence. No controllers or new deploy workflows are installed.
+* Add Helm compatibility and GitOps digest-promotion scenarios with deterministic desired-state and protected-path checks. Rendering, live-client behavior and reconciliation still require separate evidence.
+
+## 0.7.0 - 2026-10-17
+
+* Separate safeguards, defaults and conditional principles; remove framework assumptions from shared domain/API guidance and relax unjustified outbox, pagination and retry mandates.
+* Keep Django/DRF and React specialists; add stack-context and a project-aware application-builder for other stacks without claiming dedicated framework validation. Route builders and merge order by actual dependencies.
+* Expand Terraform and Docker/Compose implementation/validation guidance; add a Kubernetes skill and artifact-specific verification with static/local/environment evidence. Preserve existing deployment ownership and local operation.
+* Make onboarding fact-based and scope infrastructure paths to approved project files. Regenerate React API clients only when relevant; align bug regression-test guidance and reviewers.
+* Local checks require declared/detected supported stacks or an existing complete project command. Unknown stacks and container/deployment changes without appropriate configured checks now block instead of invoking unrelated tools or silently skipping. Existing projects may need explicit stack/check configuration.
+* Add six engineering evaluation fixtures and hook regression coverage. Engineering fixture grading is change screening only; real client/tool evidence remains required and is not implied by this release.
+
 ## 0.6.1 - 2026-10-09
 
 * Use the user's established Git author/committer and authenticated PR identity, with one-line Conventional Commits and no assistant/tool attribution. Verify identity before publication without inventing emails or silently changing Git configuration; disable Claude attribution in the distributed settings.

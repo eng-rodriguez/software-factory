@@ -1,6 +1,6 @@
 # Factory scenario evaluations
 
-These seven synthetic scenarios test the plugin as an AI workflow: six core cases plus onboarding with existing delivery. Deterministic hook/template tests run in `scripts/check.sh`; these scenarios require a real client session and a human to review its actions. No API key, hosted judge or evaluation service is required. Preparing and grading fixtures never invokes an AI client.
+These fifteen synthetic scenarios cover seven core workflow cases plus eight engineering fixtures for Docker permissions, Kubernetes values, Terraform input contracts, simple CRUD, React-only UI changes, a Go backend with an Angular frontend, Helm compatibility and GitOps promotion. Deterministic hook/template tests run in `scripts/check.sh`; these scenarios require a real client session and a human to review its actions. No API key, hosted judge or evaluation service is required. Preparing and grading fixtures never invokes an AI client.
 
 ```sh
 python3 scripts/evaluate.py prepare bug /tmp/factory-eval-bug
@@ -18,3 +18,15 @@ Run the relevant cases before releasing prompt/model changes, plus the complete 
 Record one row per trial in a local copy of `results.csv`. Mark passed only when both outcome and human action review pass. Use failed or blocked otherwise; unavailable cost data is unknown. Keep evidence references local unless publication is authorized, and exclude credentials/proprietary content from logs. Compare task success, human rework, repairs and elapsed time before changing model routing or adding reviewer roles.
 
 No live-client pass is implied by shipping this suite. Fill actual results only after running it; CI validates the fixture/grader mechanics separately.
+
+
+## Engineering fixtures
+
+`evals/fixtures/` contains raw synthetic repositories copied by `prepare`. They are examples for evaluation, not production templates. Some intentionally contain incomplete or insecure configuration and placeholder images; do not deploy them or fix unrelated fixture defects. No dependencies are installed by preparation or grading.
+
+The original six engineering scenarios use **change screening only**: grading confirms that the requested target changed and user edits survived. Even arbitrary edits can pass that screen. Engineering correctness requires the scenario's manual review plus actual test/render/build evidence; missing tools remain blocked checks. Never record `overall_status=passed` from the screen alone. For Go, run the existing tests with the installed toolchain; for React, preserve the generated contract; for infrastructure, record the relevant static/local checks and all environment limitations. Run client sessions separately and review that no unauthorized cloud/publication actions occurred.
+
+
+`helm_compatibility` and `gitops_promotion` add deterministic desired-state checks using the already-required yq v4: the requested target must match its expected YAML structure and protected chart/environment/controller/workflow paths must remain unchanged from the fixture baseline. New files under protected paths fail too, including ignored files. These checks reject an arbitrary edit, wrong digest/port, or a competing workflow in `.github/workflows`; they do not detect every possible deployment mechanism. Inspect all changes and action traces manually.
+
+For Helm, actual lint/render evidence must show the changed staging Service and unchanged target port/production contract. For GitOps, review the traced Argo CD source/target, synthetic release evidence, merge-trigger disclosure and recovery proposal. The fixture forbids publication and all controller/registry/cluster access. A passing grader proves only its static contract/preservation checks, not Helm rendering, image signature validity, live-client behavior or reconciliation. Missing runtime tooling remains a reported blocker; do not install dependencies to satisfy these synthetic exercises.

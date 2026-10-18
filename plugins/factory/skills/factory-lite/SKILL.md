@@ -3,13 +3,14 @@ name: factory-lite
 description: Lightweight chain for bug fixes and small changes. Use for fix, tweak, small change, or when the user says "lite".
 ---
 First use [workspace-context](../workspace-context/SKILL.md) to resolve the mode, project context and artifact paths. In workspace mode its path, commit, onboarding and CI rules override the repository-mode defaults below.
+Then use [stack-context](../stack-context/SKILL.md) to select the actual stack, builder and project checks.
 Follow the shared [author identity and writing voice](../../guides/authorship.md) rules for all written artifacts, commits and PR publication.
 
 
 Use the change-scope skill throughout. Pass the approved plan and pre-implementation commit to the builder and reviewers.
 
 1. factory:codebase-researcher on the area. Show the map and a 3–5 line plan including the scope boundary. Record risk and reason using change-scope/completion.md. ASK HUMAN: go? Save the approved plan and checkpoint in the lite review record.
-2. The builder that owns the layer (django, react, infra or pipeline). For bugs, write the failing test first. Before review, record actual check results and 3–5 manual How to verify steps with expected outcomes in the lite review record.
+2. The builder selected by stack-context (Django, React, project-aware application, AI, infrastructure or pipeline). For a small cross-layer change run affected builders sequentially in dependency order; use the full workflow if design coordination exceeds the approved lite plan. For bugs, write the failing test first. Before review, record actual check results and 3–5 manual How to verify steps with expected outcomes in the lite review record.
 3. In parallel: factory:implementation-validator (against the plan) and factory:security-reviewer. Supply both with the current implementation diff and check results, including scope evidence for failures.
 4. Classify failed checks and findings using change-scope. Fix only in-scope test failures and Critical findings, in one repair round total, then rerun the affected checks and reviews. Defer unrelated findings; uncertain findings or dependencies that prevent verification pause for a scope decision. If in-scope failures or Critical findings remain after the repair round, stop and report them; new findings do not restart the loop.
 5. Apply the shared completion rules. For High-risk work require the human to confirm manual verification and recovery before opening a PR. Show actual check results and deferred findings, 3–5 short manual "How to verify" steps with expected results, and offer to open a PR written with the pr-format skill. Offer the closing-notes skill when the change is user-visible or the human asks.

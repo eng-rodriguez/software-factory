@@ -1,0 +1,7 @@
+{
+  "image": "registry.example.invalid/service",
+  "staging_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "previous_production_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "staging_checks": "passed in synthetic exercise only",
+  "signature": "synthetic evidence; not a registry attestation"
+}

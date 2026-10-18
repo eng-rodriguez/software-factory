@@ -1,14 +1,14 @@
 # Domain
 
 ## Ubiquitous language
-Add a term here before using it in code. Agents use these names exactly.
+Record substantive domain terms and their code names. Preserve established language; this glossary is optional for work without business-domain concepts.
 
 | Term | Meaning | Context | Code name |
 | --- | --- | --- | --- |
 | <Order> | <A customer's request to buy one or more items> | <orders> | `orders.Order` |
 
 ## Bounded contexts
-| Context (Django app) | Type | Owns | Upstream of | Downstream of |
+| Context (owning modules/apps) | Type | Owns | Upstream of | Downstream of |
 | --- | --- | --- | --- | --- |
 | <orders> | core \| supporting \| generic | <aggregates> | <contexts> | <contexts> |
 

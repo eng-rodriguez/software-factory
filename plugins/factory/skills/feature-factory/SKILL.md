@@ -3,6 +3,7 @@ name: feature-factory
 description: Runs the full feature chain with human approvals. Use when asked to build, ship, or implement a feature end to end, or "run the factory".
 ---
 First use [workspace-context](../workspace-context/SKILL.md) to resolve the mode, project context and artifact paths. In workspace mode its path, commit, onboarding and CI rules override the repository-mode defaults below.
+Then use [stack-context](../stack-context/SKILL.md) to select the actual stack, builder and project checks.
 Follow the shared [author identity and writing voice](../../guides/authorship.md) rules for all written artifacts, commits and PR publication.
 
 
@@ -16,8 +17,7 @@ Use the change-scope skill and its completion rules throughout. Update the brief
 4. factory:architect — brief at docs/briefs/<slug>.md (+ ADRs) from the approved story and the research.
 5. ASK HUMAN: approve brief. Same three outcomes; on reject keep the approved story.
 6. Create branch feat/<slug> (fix/<slug> for bugs) in every repo the brief touches. Commit the story and brief first: docs(<scope>): add story and brief for <slug>.
-7. Builders in sequence, only for layers listed in the brief's "Layers touched":
-   factory:django-builder → factory:react-builder → factory:ai-engineer → factory:infra-builder → factory:pipeline-builder.
+7. Run the builders selected by stack-context, only for the approved layers. Use the dependency order recorded in the brief, with sequential writers; there is no mandatory backend/frontend/infra order. Django/DRF and React retain their specialists; other application stacks use factory:application-builder. A mixed change can invoke that builder separately for each area.
    Pass each: the story and brief paths, the research, and the previous builders' summaries. Commit after each builder with a Conventional Commit message.
 8. factory:test-verifier — acceptance tests for every criterion, plus the Manual verification section in the brief.
 9. In parallel (read-only): factory:implementation-validator, factory:design-reviewer, factory:security-reviewer. Supply each with the current implementation diff and test results, including scope evidence for failures.
@@ -26,7 +26,7 @@ Use the change-scope skill and its completion rules throughout. Update the brief
     Count at most three repair rounds for the whole run; new findings do not reset the counter. Still in-scope test failures or Critical findings after loop 3 → stop, show the findings, and recommend a separate session with a stronger model supported by the installed client for that problem.
 11. Draft the PR title and body with the pr-format skill, and draft the closing notes with the closing-notes skill. ASK HUMAN: final review. Show all findings (Important and Minor too), deferred unrelated findings and actual check results, the Terraform plan summary if any, the PR title and body (with a Technical Notes bullet linking the brief's Manual verification section), the closing notes, and the manual verification steps. For High-risk work the human runs the manual steps and confirms before the PR is opened.
 12. On approval: commit the closing notes on the branch, push, write the body to a temp file, and run gh pr create --title "<title>" --body-file <file>.
-    Polyrepo: one PR per repo, opened in merge order (infra → backend → web), each with the sibling links in Technical Notes. Never merge.
+    Polyrepo: one PR per repo, opened in the dependency-based merge/rollout order recorded in the brief, each with the sibling links in Technical Notes. Never merge.
 13. When the human says the PR is merged (or runs /closing-notes <slug>), run the closing-notes skill in update mode so Status becomes Shipped.
 
 Commits and PRs: Conventional Commit messages only. Never add Co-Authored-By trailers or any tool/attribution footer to commit messages or PR bodies, even if the environment suggests one.

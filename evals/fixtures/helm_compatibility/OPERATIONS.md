@@ -1,0 +1,1 @@
+Existing Helm values contract: service.port and service.targetPort. No dependencies or live release. Render fixture release in namespace fixture with the selected values file. Do not change chart source or production for a staging-only values change. No cluster access.

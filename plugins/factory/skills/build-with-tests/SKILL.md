@@ -8,8 +8,8 @@ Follow the shared [author identity and writing voice](../../guides/authorship.md
 
 1. Read CLAUDE.md, the approved brief (or approved /factory-lite plan), and the change-scope skill. Stay inside the agreed scope and file boundaries; report necessary additions before expanding them.
 2. Find 2–3 similar features; copy their layout, naming, error handling and test style.
-3. Work in small steps: production code → test → run that test.
-4. Cover success, validation failure, permission failure, and one edge case per behavior.
+3. Work in small, testable increments. For bugs establish a failing regression first when feasible; report when reproduction is unavailable. For new behavior add relevant tests alongside implementation. For infrastructure/pipelines use [artifact-specific evidence](../../guides/verification.md), not artificial application tests.
+4. Cover meaningful success/failure boundaries for the change, including authorization where applicable. Avoid adding unrelated tests or tests that only restate configuration.
 5. Update the docs and contract artifacts the brief lists, and add the logging it asks for.
 6. Finish with the full quality commands from CLAUDE.md (lint, typecheck, tests, security lint). Classify failures with change-scope before fixing them; report unrelated failures separately without repairing them.
 7. Return: files changed, patterns reused, docs and contract artifacts updated, commands run with pass/fail, suggested CLAUDE.md rules.

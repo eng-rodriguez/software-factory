@@ -1,31 +1,25 @@
 ---
 name: principles-design
-description: Software design rules from A Philosophy of Software Design and Clean Code, plus the precedence table that resolves conflicts between all principle skills. Use when writing or reviewing any code, naming things, splitting modules, or when two principles disagree.
+description: Shared design guidance and applicability rules. Use when designing or reviewing code, or resolving competing factory conventions.
 ---
 
-## Rules
-1. Prefer deep modules: a simple interface hiding substantial behavior. Flag shallow pass-through classes and functions.
-2. Pull complexity downward: the module absorbs edge cases so callers don't.
-3. Define errors out of existence where possible (idempotent operations, sensible defaults) before adding exception paths.
-4. Comments explain *why* and interface contracts, not *what* the code does.
-5. Names are precise and from the domain; a vague name is a design smell.
-6. Functions do one thing at one level of abstraction, but never split a function just to make it short.
-7. No duplicated knowledge; three similar blocks justify an abstraction, two do not.
-8. Tests are first-class code: readable, one behavior per test, builders for setup.
+## Applicability
 
-## Review questions
-- Which module got more complex for its callers, and could it absorb that complexity instead?
-- Is there a class or function whose interface is as complex as its body?
-- Would a newcomer understand each name without reading its implementation?
-- Does each test name the one behavior it checks?
+Classify guidance before enforcing it:
+- **Safeguards:** protect authorization, tenant/data isolation, secrets, compatibility, user work, and truthful verification. Do not waive these to satisfy a convention.
+- **Defaults:** prefer these when the project has no established approach. A different approach is not a defect by itself.
+- **Conditional patterns:** apply only when the stated problem exists; explain the trigger and tradeoff in the brief.
 
-## Precedence
-When principles conflict, every reviewer resolves them the same way:
+Resolve competing preferences using the approved requirements and scope, then security/correctness/compatibility constraints, documented project contracts and decisions, applicable stack conventions, and finally factory defaults. Existing code is evidence, not permission to repeat a security defect. Report material conflicts; do not redesign the project to match a book. An exception to a default needs a concise rationale, not a new approval checkpoint unless scope or risk changes.
 
-| Conflict | Winner | Rule |
-| --- | --- | --- |
-| Small functions (Clean Code) vs deep modules (APOSD) | APOSD for structure, Clean Code for naming and tests | Never add a layer whose interface is as complex as its body |
-| Repository pattern (Cosmic Python) vs Django ORM | Django default | Services + selectors; repository only in complex core domains |
-| Microservices vs simplicity | Modular monolith | Extract only with an ADR naming the driver |
-| Generic CRUD vs DDD aggregates | DDD in core domains | Supporting/generic subdomains may stay plain CRUD |
-| Speed vs eval rigor (AI features) | Evals | No eval, no merge |
+## Defaults
+1. Prefer deep modules: simple interfaces hiding meaningful behavior. Keep thin adapters when they isolate a real external boundary; do not add pass-through layers without a purpose.
+2. Absorb implementation complexity inside its owner without hiding failures or policy decisions callers must understand.
+3. Eliminate avoidable error cases with explicit invariants and safe defaults; do not silently turn failure into success.
+4. Comments explain intent, constraints and contracts. Names use the project's domain language.
+5. Keep functions cohesive; do not split them merely to shorten them.
+6. Abstract shared knowledge that changes together. Repetition is evidence to investigate, not a numerical threshold requiring abstraction.
+7. Test observable behavior with readable setup. One scenario may need several assertions to establish its outcome.
+
+## Review
+For each finding cite the applicable safeguard, default or conditional pattern and its concrete impact. Do not block on a preference where an existing project convention is sound. Prefer a modular monolith; introduce service boundaries, repositories, events or other layers only for a demonstrated requirement. Use an ADR for significant lasting tradeoffs, not every local choice.

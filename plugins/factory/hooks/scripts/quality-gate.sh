@@ -45,6 +45,7 @@ fi
 
 if [[ "$custom_checked" == false ]] && touched backend; then
   b=$(area_path backend)
+  [[ "$(area_stack backend)" == django ]] || fail "backend stack has no built-in check profile; configure the project's complete commands.check"
   ( cd "$b" && py ruff check . && py ruff format --check . ) || fail "ruff in $b"
   ( cd "$b" && py mypy . ) || fail "mypy in $b"
   ( cd "$b" && py pytest -x -q --no-header -m "not slow" ); rc=$?
@@ -59,6 +60,7 @@ fi
 
 if [[ "$custom_checked" == false ]] && touched web; then
   w=$(area_path web)
+  [[ "$(area_stack web)" == react ]] || fail "frontend stack has no built-in check profile; configure the project's complete commands.check"
   args=(run)
   if [[ "$allow_empty" == true ]]; then
     args+=(--passWithNoTests)
@@ -71,9 +73,16 @@ fi
 
 if [[ "$custom_checked" == false ]] && touched infra; then
   i=$(area_path infra)
+  [[ "$(area_stack infra)" == terraform ]] || fail "infrastructure stack has no built-in check profile; configure the project's complete commands.check"
   ( terraform -chdir="$i" fmt -check -recursive && tflint --chdir="$i" --recursive ) || fail "terraform fmt/tflint in $i"
   checked=true
   echo "Factory checks: PASSED infrastructure lint (not application tests)" >&2
+fi
+
+if [[ "$custom_checked" == false ]]; then
+  if touched deploy || changed_files | grep -Eq '(^|/)(Dockerfile[^/]*|[^/]*\.Dockerfile|\.dockerignore|compose[^/]*\.ya?ml|docker-compose[^/]*\.ya?ml)$|^charts/'; then
+    fail "container/deployment changes require the project's complete commands.check for artifact-specific validation"
+  fi
 fi
 
 if changed_files | grep -q '^\.github/workflows/'; then

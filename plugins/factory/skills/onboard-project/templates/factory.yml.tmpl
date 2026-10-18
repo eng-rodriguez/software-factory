@@ -25,3 +25,12 @@ areas:
 # and record manual evidence; this does not turn skipped tests into passed tests.
 # checks:
 #   allow_no_tests: true
+
+# Stacks are detected facts, not a closed list. Example for an existing Go/Angular repo:
+# areas:
+#   backend: { path: services/api, stack: go }
+#   web: { path: client, stack: angular }
+# commands:
+#   check: make check  # Only if this complete target actually exists; runs from Git root.
+# Existing project checks override built-in stack commands. Other stacks require this
+# command; the factory does not substitute Django or Vitest checks.

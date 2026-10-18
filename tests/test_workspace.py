@@ -275,6 +275,7 @@ class WorkspaceTests(unittest.TestCase):
     def test_dependency_and_config_changes_trigger_frontend_checks(self):
         frontend = self.web / 'web'
         frontend.mkdir()
+        (self.web / '.factory.yml').write_text('areas: {web: {path: web, stack: react}}\n')
         env = self.mock_tools({'npm': 'exit 17', 'npx': 'exit 0'})
         for filename in ['package-lock.json', 'package.json', 'tsconfig.json', 'vite.config.ts']:
             with self.subTest(filename=filename):
@@ -293,7 +294,7 @@ class WorkspaceTests(unittest.TestCase):
                               'pytest': 'echo "no tests ran"; exit 5', 'python': 'exit 0'})
         for allow, expected in [(False, 2), (True, 0)]:
             (self.api / '.factory.yml').write_text(
-                'areas:\n  backend: {path: backend}\nchecks:\n  allow_no_tests: ' + str(allow).lower() + '\n')
+                'areas:\n  backend: {path: backend, stack: django}\nchecks:\n  allow_no_tests: ' + str(allow).lower() + '\n')
             result = self.run_cmd(['bash', str(SCRIPTS / 'quality-gate.sh')],
                 data=json.dumps({'cwd': str(self.api)}), env=env)
             self.assertEqual(result.returncode, expected, result.stderr)
@@ -302,6 +303,7 @@ class WorkspaceTests(unittest.TestCase):
     def test_no_frontend_tests_not_silently_allowed(self):
         (self.web / 'web').mkdir()
         (self.web / 'web/example.ts').write_text('// fixture\n')
+        (self.web / 'web/package.json').write_text('{"dependencies": {"react": "fixture"}}\n')
         env = self.mock_tools({'npm': 'exit 0', 'npx':
             'case "$*" in *vitest*) case "$*" in *--passWithNoTests*) exit 0;; *) exit 1;; esac;; esac'})
         result = self.run_cmd(['bash', str(SCRIPTS / 'quality-gate.sh')],
@@ -311,6 +313,7 @@ class WorkspaceTests(unittest.TestCase):
     def test_frontend_success_is_supported_without_optional_flags(self):
         (self.web / 'web').mkdir()
         (self.web / 'web/example.ts').write_text('// fixture\n')
+        (self.web / 'web/package.json').write_text('{"dependencies": {"react": "fixture"}}\n')
         env = self.mock_tools({'npm': 'exit 0', 'npx': 'echo "1 test passed"; exit 0'})
         result = self.run_cmd(['bash', str(SCRIPTS / 'quality-gate.sh')],
             data=json.dumps({'cwd': str(self.web)}), env=env)
@@ -320,11 +323,61 @@ class WorkspaceTests(unittest.TestCase):
     def test_root_python_lockfile_triggers_backend_checks(self):
         (self.api / 'backend').mkdir()
         (self.api / 'uv.lock').write_text('# fixture\n')
+        (self.api / 'backend/manage.py').write_text('# Django fixture\n')
         env = self.mock_tools({'uv': 'exit 17'})
         result = self.run_cmd(['bash', str(SCRIPTS / 'quality-gate.sh')],
             data=json.dumps({'cwd': str(self.api)}), env=env)
         self.assertEqual(result.returncode, 2, result.stderr)
         self.assertIn('ruff in backend', result.stderr)
+
+    def test_other_stacks_do_not_run_specialist_commands(self):
+        log = self.root / 'wrong-tools.log'
+        env = self.mock_tools({tool: 'echo called >> ' + shlex.quote(str(log)) + '; exit 0'
+                               for tool in ['ruff', 'mypy', 'pytest', 'python', 'npm', 'npx', 'terraform']})
+        for area, stack in [('backend', 'go'), ('web', 'angular'), ('infra', 'pulumi')]:
+            with self.subTest(stack=stack):
+                (self.api / area).mkdir()
+                (self.api / area / 'source.txt').write_text('fixture')
+                (self.api / '.factory.yml').write_text(f'areas: {{{area}: {{path: {area}, stack: {stack}}}}}\n')
+                result = self.run_cmd(['bash', str(SCRIPTS / 'quality-gate.sh')],
+                    data=json.dumps({'cwd': str(self.api)}), env=env)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertIn('commands.check', result.stderr)
+                self.assertFalse(log.exists())
+
+    def test_other_stack_uses_project_command_from_root(self):
+        log = self.root / 'project-check.log'
+        (self.api / 'backend').mkdir()
+        (self.api / 'backend/go.mod').write_text('module example.invalid/service\n')
+        command = 'pwd > ' + shlex.quote(str(log))
+        (self.api / '.factory.yml').write_text('areas: {backend: {path: backend, stack: go}}\n'
+            + 'commands: {check: ' + json.dumps(command) + '}\n')
+        result = self.gate(self.api)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(log.read_text().strip(), str(self.api))
+
+    def test_unknown_framework_is_not_inferred_from_backend_directory(self):
+        (self.api / 'backend').mkdir()
+        (self.api / 'backend/main.go').write_text('package main\n')
+        result = self.gate(self.api)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn('commands.check', result.stderr)
+
+    def test_deployment_only_change_requires_validation_command(self):
+        (self.api / 'deploy').mkdir()
+        (self.api / 'deploy/workload.yaml').write_text('# fixture\n')
+        result = self.gate(self.api)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn('artifact-specific validation', result.stderr)
+
+    def test_container_change_uses_complete_project_check(self):
+        (self.api / '.dockerignore').write_text('.env\n')
+        result = self.gate(self.api)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        (self.api / '.factory.yml').write_text('commands: {check: "exit 19"}\n')
+        result = self.gate(self.api)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn('project checks', result.stderr)
 
     def test_no_applicable_checks_report_skipped(self):
         result = self.gate(self.api)
