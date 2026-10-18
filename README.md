@@ -49,6 +49,8 @@ The factory detects project frameworks instead of selecting them from directory 
 
 ## Commands
 
+Start with a workflow for coordinated implementation and review:
+
 ```shell
 /feature-factory <feature> full chain with story, brief and final approvals
 /factory-lite <fix> researcher ➔ builder ➔ validator ➔ security review
@@ -56,6 +58,38 @@ The factory detects project frameworks instead of selecting them from directory 
 /adr <decision> record an architecture decision
 /closing-notes [slug] plain-language closing notes for PMs, scrum masters and leadership
 /onboard-project set up a repo for the factory
+```
+
+You can also request a skill directly for focused guidance. These skills are used by the workflows and builders automatically when relevant; invoking one alone does not run the full feature chain. Use the command name exposed by your installed client's command picker, which may include the `factory` namespace.
+
+### Application and infrastructure skills
+
+```shell
+/stack-context detect project stacks, builder routes and validation commands
+/stack-django Django/DRF implementation and review guidance
+/stack-react React/TypeScript implementation and review guidance
+/stack-terraform Terraform configuration, validation and plan review; no apply
+/stack-containers Docker image and Compose build/runtime guidance
+/stack-kubernetes Kubernetes manifests, Helm charts and Kustomize validation; no deployment
+/gitops desired-state changes and promotion guidance for existing GitOps delivery
+/devsecops-gha GitHub Actions pipelines and software supply-chain security
+```
+
+Helm guidance is part of `/stack-kubernetes`; Argo CD and Flux guidance is part of `/gitops`. For Go, Angular or another application stack, use `/factory-lite` or `/feature-factory` and name the stack: the project-aware `application-builder` agent follows its existing conventions and checks. See [stack routing](docs/USAGE.md#stack-routing-and-infrastructure-work) and [Helm and GitOps work](docs/USAGE.md#helm-and-gitops-work) for support boundaries and examples.
+
+### Supporting skills and principles
+
+```shell
+/workspace-context resolve repository or central-workspace configuration and artifact paths
+/build-with-tests implement using project conventions and quality checks
+/change-scope keep implementation and review within the approved change
+/pr-format format pull request titles and descriptions
+/principles-design shared design guidance and applicability rules
+/principles-domain domain boundaries, ownership and invariants
+/principles-api API contracts, authorization and compatibility
+/principles-data persistence, migrations and consistency
+/principles-services service boundaries and remote-call reliability
+/principles-ml ML/LLM systems, retrieval, agents and evaluations
 ```
 
 ## Changing the factory
